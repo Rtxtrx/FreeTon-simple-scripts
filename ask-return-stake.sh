@@ -9,12 +9,16 @@ echo "INFO: $(basename "$0") BEGIN $(date +%s) / $(date +'%Y-%m-%d %H:%M:%S')"
 
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
-. "${SCRIPT_DIR}/env.sh"
+source "$HOME/net.ton.dev/scripts/env.sh"
+
+ELECTIONS_WORK_DIR="${KEYS_DIR}/elections"
 
 #==================================================
 #########################
 REQUESTOR_NAME=$1
 #########################
+
+TONOS_CLI_SEND_ATTEMPTS="1"
 
 VAL_HOST_NAME=`hostname -s`
 if [[ -z ${REQUESTOR_NAME} ]];then
@@ -26,11 +30,11 @@ else
     ELECTIONS_WORK_DIR="./elections"
 fi
 
+
+
 echo "INFO: MSIG_ADDR = ${MSIG_ADDR}"
 mkdir -p "${ELECTIONS_WORK_DIR}"
 #==================================================
-
-TONOS_CLI_SEND_ATTEMPTS="100"
 # Get elector address
 "${TON_BUILD_DIR}/lite-client/lite-client" \
     -p "${KEYS_DIR}/liteserver.pub" \
@@ -75,6 +79,7 @@ awk '{
     
 recover_amount=`cat "${ELECTIONS_WORK_DIR}/recover-amount"`
 echo "Recover amount: ${recover_amount}"
+
 # Ask to return stake amount   
 if [ "$recover_amount" != "0" ]; then
     "${TON_BUILD_DIR}/crypto/fift" -I "${TON_SRC_DIR}/crypto/fift/lib:${TON_SRC_DIR}/crypto/smartcont" -s recover-stake.fif "${ELECTIONS_WORK_DIR}/recover-query.boc"
@@ -101,5 +106,5 @@ if [ "$election_id" == "0" ]; then
     date +"INFO: %F %T No current elections"
 
     echo "INFO: $(basename "$0") END $(date +%s) / $(date +'%Y-%m-%d %H:%M:%S')"
-    exit
+    exit 0
 fi
