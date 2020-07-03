@@ -41,6 +41,7 @@ esac
 
 WRK_NODE_DIR=$HOME/net.ton.dev
 NEW_NODE_DIR=$HOME/upd.node
+BKP_OLD_NODE_DIR=$HOME/old.net.ton.dev
 # ===============================
 # Fetch & build new node
 cd $HOME
@@ -103,7 +104,7 @@ do
 done
 
 # ===========================================
-mv -f $WRK_NODE_DIR ${WRK_NODE_DIR}.old
+mv -f $WRK_NODE_DIR $BKP_OLD_NODE_DIR
 mv -f $NEW_NODE_DIR $WRK_NODE_DIR
 echo "INFO: Moved!"
 # ===========================================
