@@ -12,7 +12,7 @@ You can run this script for other address insted of default in $HOME/ton-keys fo
 
 2. Update_Node.sh
   Be carefully! Check, change and check again these lines in the script before run it!
-  # !!! CHANGE THESE TWO NUMBERS AND CHECK IT TWICE !!!
+  !!! CHANGE THESE TWO NUMBERS AND CHECK IT TWICE !!!
   TON_REV="9186d482981d2a784bcbd3322cf0c09ea8184991"
   TONLABS_REV="27784c987b8282af2791ba6efc7a5ecfe544cdb2"
 
