@@ -115,6 +115,7 @@ cp -f $WRK_NODE_DIR/ton/build/lite-client/lite-client $HOME/bin
 cp -f $WRK_NODE_DIR/ton/build/utils/tonos-cli $HOME/bin
 cp -f $WRK_NODE_DIR/ton/build/validator-engine/validator-engine $HOME/bin
 cp -f $WRK_NODE_DIR/ton/build/validator-engine-console/validator-engine-console $HOME/bin
+cp -ur $BKP_OLD_NODE_DIR/scripts/* $WRK_NODE_DIR/scripts
 
 SCRIPT_DIR=$WRK_NODE_DIR/scripts
 cd $SCRIPT_DIR
