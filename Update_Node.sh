@@ -20,7 +20,7 @@
 
 # !!! CHANGE THESE TWO NUMBERS AND CHECK IT TWICE !!!
 TON_REV="53ec0dc518f83ebbc07da29f9fb13e6b2b9b3e52"
-TONLABS_REV="87de62941411850229b561811d53978da830dab7"
+TONLABS_REV="81bde5e504dc554ef7e24f8ecc9d231a9c2c0827"
 
 # ==========================================================
 echo
