@@ -125,7 +125,7 @@ mv -f ${TON_WORK_DIR}/node.log $HOME/logs/
 
 echo "INFO: start NEW node..."
 
-"$HOME/bin/validator-engine" -v "1" -t "18" -C "${TON_WORK_DIR}/etc/ton-global.config.json" --db "${TON_WORK_DIR}/db" > "${TON_WORK_DIR}/node.log" 2>&1 &
+"$HOME/bin/validator-engine" -C "${TON_WORK_DIR}/etc/ton-global.config.json" --db "${TON_WORK_DIR}/db" > "${TON_WORK_DIR}/node.log" 2>&1 &
 sleep 2s
 
 VAL_PID=`ps -ax | grep "validator\-engine" | awk '{print $1}'`
