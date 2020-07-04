@@ -22,3 +22,4 @@ TONLABS_REV="27784c987b8282af2791ba6efc7a5ecfe544cdb2"
 3. resend_stake.sh
 
 It is for emergensy purposes only. If default script fiails.
+Be carefull. Each try will cost you 1(One) token!
