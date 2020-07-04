@@ -1,4 +1,4 @@
-# FreeTon-simple-scripts
+# FreeTon simple scripts
 
 ## 1. ask-return-stake.sh
 
