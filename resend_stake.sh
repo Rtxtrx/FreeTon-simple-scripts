@@ -42,7 +42,7 @@ MSIG_ADDR=$(cat "${KEYS_DIR}/${VALIDATOR_NAME}.addr")
 echo "INFO: MSIG_ADDR = ${MSIG_ADDR}"
 ELECTIONS_WORK_DIR="${KEYS_DIR}/elections"
 
-validator_query_boc=$(base64 --wrap=0 "${ELECTIONS_WORK_DIR}/validator-query.boc")
+validator_query_boc=$(base64 "validator-query.boc" | tr -d "\n")
 elector_addr=$(cat "${ELECTIONS_WORK_DIR}/elector-addr-base64")
 NANOSTAKE=$("${UTILS_DIR}/tonos-cli" convert tokens "$STAKE" | tail -1)
 echo "INFO: NANOSTAKE = $NANOSTAKE nanotokens"
