@@ -27,6 +27,8 @@ echo "MSIG_JSON: $MSIG_JSON"
 OWN_PUB_KEY=0x`cat ${KEYS_DIR}/${MSIG_JSON}.keys.json | jq ".public" | tr -d '"'`
 WALL_ADDR=`cat ${KEYS_DIR}/${WALL_FILE}.addr`
 
+[[ "$OWN_PUB_KEY" == "0x" ]] && echo "### - ERROR: Empty Public key! Exit." && exit 1
+
 echo
 echo "Deploy wallet $WALL_ADDR"
 echo "Public key = ${OWN_PUB_KEY}"
