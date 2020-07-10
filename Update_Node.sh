@@ -19,8 +19,8 @@
 ##################################################################################################################
 
 # !!! CHANGE THESE TWO NUMBERS AND CHECK IT TWICE !!!
-TON_REV="27646a6de9adcb08cb82cb5fd0295ee7695a1a0c"
-TONLABS_REV="a1fd9e05dc6e6c77cb55d54249e8970c3cff7d1e"
+TON_REV="a1fd9e05dc6e6c77cb55d54249e8970c3cff7d1e"
+TONLABS_REV="27646a6de9adcb08cb82cb5fd0295ee7695a1a0c"
 
 # ==========================================================
 echo
