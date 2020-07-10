@@ -43,6 +43,7 @@ WRK_NODE_DIR=$HOME/net.ton.dev
 NEW_NODE_DIR=$HOME/upd.node
 BKP_OLD_NODE_DIR=$HOME/old.net.ton.dev
 # ===============================
+sudo apt -y install jq
 # Fetch & build new node
 cd $HOME
 rm -rf $NEW_NODE_DIR
