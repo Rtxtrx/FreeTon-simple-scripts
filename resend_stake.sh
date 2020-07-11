@@ -16,6 +16,8 @@
 # Author(s) retain the right to alter this disclaimer at any time.
 ##################################################################################################################
 #############################################################
+# This script DOESNOT REPLACMENT of vavidator_msig.sh !!!   #
+# USE validator_msig.sh FIRST!!                             #
 # DON'T SEND ALL AMOUNT YOU HAVE! LEAVE AT LEAST 10 TOKENS! #
 #############################################################
 
