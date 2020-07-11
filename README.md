@@ -21,6 +21,6 @@ TONLABS_REV="27646a6de9adcb08cb82cb5fd0295ee7695a1a0c"
 
 ## 3. resend_stake.sh
 
-This script DOESNOT REPLACMENT of vavidator_msig.sh !!!   
+This script DOES NOT REPLACMENT of vavidator_msig.sh !!!   
 USE validator_msig.sh FIRST!!It is for emergensy purposes only. If default script fiails.
 Be carefull. Each try will cost you 1(One) token!
