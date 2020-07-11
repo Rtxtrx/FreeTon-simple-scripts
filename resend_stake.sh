@@ -42,12 +42,16 @@ fi
 MAX_FACTOR=${MAX_FACTOR:-3}
 TONOS_CLI_SEND_ATTEMPTS="1"
 MSIG_ADDR=$(cat "${KEYS_DIR}/${VALIDATOR_NAME}.addr")
+[[ -z $MSIG_ADDR ]] && exit 1
 echo "INFO: MSIG_ADDR = ${MSIG_ADDR}"
 ELECTIONS_WORK_DIR="${KEYS_DIR}/elections"
-
+[[ -z $ELECTIONS_WORK_DIR ]] && exit 1
 validator_query_boc=$(base64 "validator-query.boc" | tr -d "\n")
+[[ -z $validator_query_boc ]] && exit 1
 elector_addr=$(cat "${ELECTIONS_WORK_DIR}/elector-addr-base64")
+[[ -z $elector_addr ]] && exit 1
 NANOSTAKE=$("${UTILS_DIR}/tonos-cli" convert tokens "$STAKE" | tail -1)
+[[ -z $NANOSTAKE ]] && exit 1
 echo "INFO: NANOSTAKE = $NANOSTAKE nanotokens"
 
 for i in $(seq ${TONOS_CLI_SEND_ATTEMPTS}); do
