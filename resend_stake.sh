@@ -15,6 +15,9 @@
 # may be republished without author(s) express written permission. 
 # Author(s) retain the right to alter this disclaimer at any time.
 ##################################################################################################################
+#############################################################
+# DON'T SEND ALL AMOUNT YOU HAVE! LEAVE AT LEAST 10 TOKENS! #
+#############################################################
 
 set -o pipefail
 
