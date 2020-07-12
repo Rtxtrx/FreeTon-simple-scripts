@@ -4,7 +4,7 @@ set -o pipefail
 # set -u
 
 function not_found(){
-    if [[ -z $ACC_STATUS ]];then
+    if [[ -z $AMOUNT ]];then
     echo
     echo "Account not found!"
     echo
@@ -17,7 +17,7 @@ SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
 
-MY_ACCOUNT=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
+MY_ACCOUNT=`cat "${KEYS_DIR}/${HOSTNAME}.addr"`
 
 ACCOUNT=$1
 ACCOUNT=${ACCOUNT:=$MY_ACCOUNT}
