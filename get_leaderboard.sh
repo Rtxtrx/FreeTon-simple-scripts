@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# !!! `jq` must be installed !!!
 
 GAME_NUM=0
 GAM_WEEK=2
