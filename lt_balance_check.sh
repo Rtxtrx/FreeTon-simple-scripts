@@ -22,7 +22,7 @@ MY_ACCOUNT=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
 ACCOUNT=$1
 ACCOUNT=${ACCOUNT:=$MY_ACCOUNT}
 
-ACCOUNT_INFO=`lite-client -p "${KEYS_DIR}/liteserver.pub" -a 127.0.0.1:3031 -rc "getaccount ${ACCOUNT}" -t "3" -rc "quit" 2>/dev/null `
+ACCOUNT_INFO=`${TON_BUILD_DIR}/lite-client/lite-client -p "${KEYS_DIR}/liteserver.pub" -a 127.0.0.1:3031 -rc "getaccount ${ACCOUNT}" -t "3" -rc "quit" 2>/dev/null `
 
 ACC_STATUS=`echo "$ACCOUNT_INFO" | grep "state:" | awk -F "(" '{ print $2 }'`
 AMOUNT=`echo "$ACCOUNT_INFO" |grep "account balance" | tr -d "ng"|awk '{print $4}'`
