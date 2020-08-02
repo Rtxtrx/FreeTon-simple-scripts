@@ -80,7 +80,7 @@ if [ "$election_id" == "0" ]; then
     echo
     exit 0
 fi
-
+echo "INFO: Current Elections ID: $election_id"
 MSIG_ADDR=`cat "${KEYS_DIR}/${VALIDATOR_NAME}.addr"`
 val_acc_addr=`echo "${MSIG_ADDR}" | cut -d ':' -f 2`
 dec_val_acc_addr=$(hex2dec "$val_acc_addr")
@@ -97,6 +97,7 @@ trap - EXIT
 ADDR_FOUND=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_acc_addr" | tr -d "[" | awk '{print $5}'`
 if [[ -z $ADDR_FOUND ]];then
     echo "###-ERROR: Can't find in participant list account: ${MSIG_ADDR} / $dec_val_acc_addr"
+    exit 1
 fi
 
 Your_Stake=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_adnl" | tr -d "[" | awk '{print $2 / 1000000000}'`
