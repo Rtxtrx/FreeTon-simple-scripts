@@ -84,7 +84,7 @@ fi
 MSIG_ADDR=`cat "${KEYS_DIR}/${VALIDATOR_NAME}.addr"`
 val_acc_addr=`echo "${MSIG_ADDR}" | cut -d ':' -f 2`
 dec_val_acc_addr=$(hex2dec "$val_acc_addr")
-echo "INFO: MSIG_ADDR = ${MSIG_ADDR} / $dec_val_acc"
+echo "INFO: MSIG_ADDR = ${MSIG_ADDR} / $dec_val_acc_addr"
 
 dec_val_adnl=$(hex2dec "$ADNL_KEY")
 echo "INFO: DECIMAL ADNL = ${dec_val_adnl}"
@@ -96,7 +96,7 @@ trap - EXIT
 
 ADDR_FOUND=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_acc_addr" | tr -d "[" | awk '{print $5}'`
 if [[ -z $ADDR_FOUND ]];then
-    echo "###-ERROR: Can't find in participant list account: ${MSIG_ADDR} / $dec_val_acc"
+    echo "###-ERROR: Can't find in participant list account: ${MSIG_ADDR} / $dec_val_acc_addr"
 fi
 
 Your_Stake=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_adnl" | tr -d "[" | awk '{print $2 / 1000000000}'`
