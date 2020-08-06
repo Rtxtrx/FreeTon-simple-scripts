@@ -33,6 +33,17 @@ hex2dec() {
         dc -e "${ib}i ${ival} p" | tr -d "\\" | tr -d '\n'
     fi
 }
+# ===================================================
+GET_CHAIN_DATE() {
+    OS_SYSTEM=`uname`
+    ival="${1}"
+    if [[ "$OS_SYSTEM" == "Linux" ]];then
+        echo "$(date  +'%F %T %Z' -d @$ival)"
+    else
+        echo "$(date -r $ival +'%F %T %Z')"
+    fi
+}
+# ===================================================
 
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
@@ -80,7 +91,10 @@ if [ "$election_id" == "0" ]; then
     echo
     exit 0
 fi
-echo "INFO: Current Elections ID: $election_id"
+
+echo
+echo "Now is $(date +'%F %T %Z')"
+echo "INFO: Current Elections ID: $election_id "
 MSIG_ADDR=`cat "${KEYS_DIR}/${VALIDATOR_NAME}.addr"`
 val_acc_addr=`echo "${MSIG_ADDR}" | cut -d ':' -f 2`
 dec_val_acc_addr=$(hex2dec "$val_acc_addr")
@@ -102,7 +116,7 @@ fi
 
 Your_Stake=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_adnl" | tr -d "[" | awk '{print $2 / 1000000000}'`
 Your_ADNL=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_adnl" | tr -d "[" | awk '{print $5}'`
-echo "---INFO: Your stake: $Your_Stake with ADNL: $Curr_ADNL_Key"
-
+echo "---INFO: Your stake: $Your_Stake with ADNL: $(echo "$Curr_ADNL_Key" | tr "[:upper:]" "[:lower:]")"
+echo "You will start validate from $(GET_CHAIN_DATE "$election_id")"
+echo "-----------------------------------------------------------------------------------------------------"
 exit 0
-
