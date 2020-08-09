@@ -123,7 +123,7 @@ CHAIN_TD=`echo "${VEC_OUTPUT}" | grep masterchainblocktime | awk '{print $2}'`
 TIME_DIFF=$((CURR_TD_NOW - CHAIN_TD))
 if [[ $TIME_DIFF -gt $TIMEDIFF_MAX ]];then
     echo "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF"
-    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF" 2>&1 > /dev/null
+    [[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF" 2>&1 > /dev/null
     exit 1
 fi
 echo "INFO: Current TimeDiff: $TIME_DIFF"
@@ -196,7 +196,7 @@ if [ "$recover_amount" != "0" ]; then
 
 	echo "INFO: Recovery request was sent SUCCESSFULLY for ((recover_amount/1000000000))"
 	echo "INFO: $(basename "$0") END $(date +%s) / $(date)"
-	"${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Requested $((recover_amount/1000000000))" 2>&1 > /dev/null
+	[[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Requested $((recover_amount/1000000000))" 2>&1 > /dev/null
 	exit 0
     
 else
@@ -276,7 +276,7 @@ if [ "$STAKE" -ge ${VALIDATOR_ACTUAL_BALANCE} ]; then
     echo "###-ERROR: not enough tokens in ${MSIG_ADDR} wallet"
     echo "INFO: VALIDATOR_ACTUAL_BALANCE = ${VALIDATOR_ACTUAL_BALANCE}"
     echo "INFO: $(basename "$0") END $(date +%s) / $(date)"
-    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: not enough tokens in ${MSIG_ADDR} wallet. Balance: $VALIDATOR_ACTUAL_BALANCE" 2>&1 > /dev/null
+    [[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: not enough tokens in ${MSIG_ADDR} wallet. Balance: $VALIDATOR_ACTUAL_BALANCE" 2>&1 > /dev/null
     exit 1
 fi
 
@@ -487,7 +487,7 @@ vr_result=`cat ${ELECTIONS_WORK_DIR}/validator-req-result.log | grep "external m
 
 if [[ -z $vr_result ]]; then
     echo "###-ERROR: Send message for eletction FILED!!!"
-    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Send message for eletction FILED!!!" 2>&1 > /dev/null
+    [[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Send message for eletction FILED!!!" 2>&1 > /dev/null
     exit 1
 fi
 
@@ -496,7 +496,7 @@ echo "INFO: Submit transaction for elections was done SUCCESSFULLY!"
 FUTURE_CYCLE_ADNL=`echo $New_ADNL_Key | tr "[:upper:]" "[:lower:]"`
 echo "INFO: Sent $STAKE for elections. ADNL: $FUTURE_CYCLE_ADNL"
 
-"${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Sent $STAKE for elections. ADNL: $FUTURE_CYCLE_ADNL" 2>&1 > /dev/null
+[[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Sent $STAKE for elections. ADNL: $FUTURE_CYCLE_ADNL" 2>&1 > /dev/null
 
 date +"INFO: %F %T prepared for elections"
 echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
