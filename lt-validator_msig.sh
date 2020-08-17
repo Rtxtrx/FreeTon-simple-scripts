@@ -312,7 +312,7 @@ fi
 #=================================================
 # Generate new elections key
 echo "INFO: Generate new elections key ..."
-NewElectionKey=`echo ${ELECTIONS_WORK_DIR}/$election_id | grep "Elections key:" | awk '{print $3}'` 
+NewElectionKey=`cat ${ELECTIONS_WORK_DIR}/$election_id | grep "Elections key:" | awk '{print $3}'` 
 if [[ -z $NewElectionKey ]];then
     trap 'echo VC TIMEOUT EXIT' EXIT
     NewElectionKey=`$CALL_VC -c "newkey" -c "quit" 2>/dev/null | tee "${ELECTIONS_WORK_DIR}/${VALIDATOR_NAME}-election-key" | grep "created new key" | awk '{print $4}'`
@@ -330,7 +330,7 @@ echo "INFO: New election key: $NewElectionKey"
 #=================================================
 # Generate election ADNL key
 echo "INFO: Generate new ADNL key ..."
-New_ADNL_Key=`echo ${ELECTIONS_WORK_DIR}/$election_id | grep "ADNL key:" | awk '{print $3}'` 
+New_ADNL_Key=`cat ${ELECTIONS_WORK_DIR}/$election_id | grep "ADNL key:" | awk '{print $3}'` 
 if [[ -z $New_ADNL_Key ]];then
     trap 'echo VC TIMEOUT EXIT' EXIT
     New_ADNL_Key=`$CALL_VC -c "newkey" -c "quit" 2>/dev/null | tee "${ELECTIONS_WORK_DIR}/${VALIDATOR_NAME}-election-adnl-key" | grep "created new key" | awk '{print $4}'`
