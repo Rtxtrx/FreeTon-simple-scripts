@@ -65,7 +65,7 @@ done
 WalletAddress=`${UTILS_DIR}/tonos-cli genaddr \
 		${CONFIGS_DIR}/SafeMultisigWallet.tvc \
 		${CONFIGS_DIR}/SafeMultisigWallet.abi.json \
-		--setkey "$KEY_FILES_DIR/msig1.keys.json" --wc "-1" \
+		--setkey "$KEY_FILES_DIR/msig1.keys.json" --wc "0" \
 		| tee  $KEY_FILES_DIR/${HOSTNAME}_addr-card.txt \
 		| grep "Raw address:" | awk '{print $3}' \
 		| tee $KEY_FILES_DIR/${HOSTNAME}.addr`
