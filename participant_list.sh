@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-08-01 08:00:00
+# (C) Sergey Tyurin  2020-08-08 18:00:00
 
 # Disclaimer
 ##################################################################################################################
@@ -57,6 +57,14 @@ fi
 ELECTIONS_WORK_DIR="${KEYS_DIR}/elections"
 CALL_LC="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031 -t 5"
 
+Depool_addr=`cat ${KEYS_DIR}/depool.addr`
+Helper_addr=`cat ${KEYS_DIR}/helper.addr`
+Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
+Proxy1_addr=`cat ${KEYS_DIR}/proxy1.addr`
+Validator_addr=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
+Tik_addr=`cat ${KEYS_DIR}/Tik.addr`
+Work_Chain=`echo "${Tik_addr}" | cut -d ':' -f 1`
+
 # =======================================================================================================
 elector_addr=`cat ${ELECTIONS_WORK_DIR}/elector-addr-base64`
 ADNL_KEY="$1"
@@ -79,6 +87,7 @@ if [ "$election_id" == "0" ]; then
     FOUND_PUB_KEY=`echo "$VALS_LIST" | grep -i "$Curr_ADNL_Key" | awk -F ":" '{print $3}'| awk '{print $1}' | tr -d 'x' | tr -d ')'`
     if [[ -z $FOUND_PUB_KEY ]];then
         echo "###-ERROR: Your ADNL Key NOT FOUND in current or next validators list!!!"
+        echo "-----------------------------------------------------------------------------------------------------"
         echo
         exit 1
     fi
@@ -87,7 +96,8 @@ if [ "$election_id" == "0" ]; then
     echo
     echo "INFO: Found you in $VALS_DEF validators with weight $(echo "scale=3; ${VAL_WEIGHT} / 10000000000000000" | $CALL_BC)%"
     echo "INFO: Your public key: $FOUND_PUB_KEY"
-    echo "INFO: Your   ADNL key: $ADNL_KEY"
+    echo "INFO: Your   ADNL key: $(echo "$ADNL_KEY" | tr "[:upper:]" "[:lower:]")"
+    echo "-----------------------------------------------------------------------------------------------------"
     echo
     exit 0
 fi
@@ -95,7 +105,7 @@ fi
 echo
 echo "Now is $(date +'%F %T %Z')"
 echo "INFO: Current Elections ID: $election_id "
-MSIG_ADDR=`cat "${KEYS_DIR}/${VALIDATOR_NAME}.addr"`
+MSIG_ADDR="$Depool_addr"
 val_acc_addr=`echo "${MSIG_ADDR}" | cut -d ':' -f 2`
 dec_val_acc_addr=$(hex2dec "$val_acc_addr")
 echo "INFO: MSIG_ADDR = ${MSIG_ADDR} / $dec_val_acc_addr"
@@ -105,18 +115,19 @@ echo "INFO: DECIMAL ADNL = ${dec_val_adnl}"
 
 # public key : [ stake, max_factor, wallet (addr), adnl (adnl_addr) ]
 trap 'echo LC TIMEOUT EXIT' EXIT
-LC_OUTPUT=$($CALL_LC -rc "runmethodfull $elector_addr participant_list_extended" -rc "quit" 2>/dev/null)
+LC_OUTPUT="$($CALL_LC -rc "runmethodfull $elector_addr participant_list_extended" -rc "quit" 2>/dev/null | grep 'result:' | tr "]]" "\n" | tr '[' '\n' | awk 'NF > 0')"
 trap - EXIT
 
-ADDR_FOUND=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_acc_addr" | tr -d "[" | awk '{print $5}'`
+ADDR_FOUND=`echo "${LC_OUTPUT}" | grep -i "$dec_val_adnl" | awk '{print $4}'`
 if [[ -z $ADDR_FOUND ]];then
-    echo "###-ERROR: Can't find in participant list account: ${MSIG_ADDR} / $dec_val_acc_addr"
+    echo "###-ERROR: Can't find you in participant list. account: ${MSIG_ADDR} / $dec_val_acc_addr"
     exit 1
 fi
 
-Your_Stake=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_adnl" | tr -d "[" | awk '{print $2 / 1000000000}'`
-Your_ADNL=`echo "${LC_OUTPUT}" | tr "]]" "\n" | grep "$dec_val_adnl" | tr -d "[" | awk '{print $5}'`
+Your_Stake=`echo "${LC_OUTPUT}" | grep "$dec_val_adnl" | awk '{print $1 / 1000000000}'`
+Your_ADNL=`echo "${LC_OUTPUT}" | grep "$dec_val_adnl" | awk '{print $4}'`
 echo "---INFO: Your stake: $Your_Stake with ADNL: $(echo "$Curr_ADNL_Key" | tr "[:upper:]" "[:lower:]")"
 echo "You will start validate from $(GET_CHAIN_DATE "$election_id")"
 echo "-----------------------------------------------------------------------------------------------------"
 exit 0
+
