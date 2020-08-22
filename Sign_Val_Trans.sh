@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-08-17 18:00:00
+# (C) Sergey Tyurin  2020-08-22 15:00:00
 
 # Disclaimer
 ##################################################################################################################
@@ -38,9 +38,11 @@ if [ "$DEBUG" = "yes" ]; then
     set -x
 fi
 
-###############
+####################
 TIMEDIFF_MAX=100
-###############
+SLEEP_TIMEOUT=10
+SEND_ATTEMPTS=10
+###################
 
 echo "######################################## Signing script ########################################"
 echo "INFO: $(basename "$0") BEGIN $(date +%s) / $(date)"
@@ -50,18 +52,17 @@ SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 . "${SCRIPT_DIR}/env.sh"
 
 #=================================================
-hex2dec() {
-    OS_SYSTEM=`uname`
-    ival="${1^^}"
-    ob=${2:-10}
-    ib=${3:-16}
-    if [[ "$OS_SYSTEM" == "Linux" ]];then
-        export BC_LINE_LENGTH=0
-        # set obase first before ibase -- or weird things happen.
-        printf "obase=%d; ibase=%d; %s\n" $ob $ib $ival | bc
-    else
-        dc -e "${ib}i ${ival} p" | tr -d "\\" | tr -d "\n"
+function Get_SC_current_state() { 
+    rm -f ${val_acc_addr}.tvc
+    trap 'echo LC TIMEOUT EXIT' EXIT
+    local LC_OUTPUT=`$CALL_LC -rc "saveaccount ${val_acc_addr}.tvc ${MSIG_ADDR}" -rc "quit" 2>/dev/null | tee ${ELECTIONS_WORK_DIR}/get-acc-state.log`
+    trap - EXIT
+    local result=`echo $LC_OUTPUT | grep "written StateInit of account"`
+    if [[ -z  $result ]];then
+        echo "###-ERROR: Cannot get account state. Can't continue. Sorry."
+        exit 1
     fi
+    echo "$LC_OUTPUT"
 }
 #=================================================
 # Test binaries
@@ -76,7 +77,7 @@ if [[ -z $(xxd -v 2>&1 | grep "Juergen Weigert") ]];then
 fi
 
 #=================================================
-# Call difines
+# Call defines
 CALL_LC="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031 -t 5"
 CALL_VC="${TON_BUILD_DIR}/validator-engine-console/validator-engine-console -k ${KEYS_DIR}/client -p ${KEYS_DIR}/server.pub -a 127.0.0.1:3030 -t 5"
 CALL_FIFT="${TON_BUILD_DIR}/crypto/fift -I ${TON_SRC_DIR}/crypto/fift/lib:${TON_SRC_DIR}/crypto/smartcont"
@@ -135,29 +136,30 @@ if [[ ! -z $election_id ]] && [[ ! -f ${ELECTIONS_WORK_DIR}/$election_id ]];then
 fi
 
 ##############################################################################
-# Get SC current state to file ${ELECTIONS_WORK_DIR}/$val_acc_addr.tvc                       elector transaction ID
-rm -f ${val_acc_addr}*
-trap 'echo LC TIMEOUT EXIT' EXIT
-LC_OUTPUT=`$CALL_LC -rc "saveaccount ${val_acc_addr}.tvc ${MSIG_ADDR}" -rc "quit" 2>/dev/null | tee ${ELECTIONS_WORK_DIR}/get-acc-state.log`
-trap - EXIT
+# Get SC current state to file ${ELECTIONS_WORK_DIR}/$val_acc_addr.tvc
+echo -n "Get SC state of acc: $MSIG_ADDR ... "    
+LC_OUTPUT="$(Get_SC_current_state)"
 result=`echo $LC_OUTPUT | grep "written StateInit of account"`
 if [[ -z  $result ]];then
     echo "###-ERROR: Cannot get account state. Can't continue. Sorry."
     exit 1
 fi
+echo "Done."
 
 ##############################################################################
 # Get custodians number
-Custod_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getCustodians -p '{}' --decode-c6 $val_acc_addr | grep '"custodians":'| jq ".custodians|length"`
+Custod_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getCustodians -p '{}' --decode-c6 $val_acc_addr | grep '"custodians":'| jq ".custodians|length"|tr -d '"'`
+Custod_QTY=$((Custod_QTY))
 # Get Required number of confirmations
-Confirms_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getParameters -p '{}' --decode-c6 $val_acc_addr | grep "requiredTxnConfirms" | jq '.requiredTxnConfirms'`
+Confirms_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getParameters -p '{}' --decode-c6 $val_acc_addr | grep "requiredTxnConfirms" | jq '.requiredTxnConfirms'|tr -d '"'`
+Confirms_QTY=$((Confirms_QTY))
 echo "******************************"
-Confirms_QTY=$(hex2dec "$Confirms_QTY")
 echo "INFO: Number of custodians: $Custod_QTY. Required number of confirmations: $Confirms_QTY"
 
 ##############################################################################
 # Get Transaction ID to sign
-Trans_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getTransactions -p '{}' --decode-c6 $val_acc_addr | grep '"transactions":'| jq ".transactions|length"`
+Trans_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getTransactions -p '{}' --decode-c6 $val_acc_addr | grep '"transactions":'| jq ".transactions|length"|tr -d '"'`
+Trans_QTY=$((Trans_QTY))
 if [[ $Trans_QTY -eq 0 ]];then
     echo
     echo "###-ERROR: Trans_QTY=$Trans_QTY. NO transactions to sign. Exit."
@@ -174,11 +176,17 @@ fi
 Trans_ID=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getTransactions -p '{}' --decode-c6 $val_acc_addr | grep '"transactions":'| jq '.transactions[].id'`
 echo "INFO: Found $Trans_QTY transaction to sign with ID: $Trans_ID"
 
+signsReceived=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getTransactions -p '{}' --decode-c6 $val_acc_addr | grep '"transactions":'| jq '.transactions[].signsReceived'|tr -d '"'`
+signsReceived=$((signsReceived))
+echo "signsReceived: $signsReceived"
 ##############################################################################
-# Make signing bocs  
+# Send signatures one by one with checks 
+# Assume that transaction was made and already signed by custodian with pubkey index # 0x0
+# other custodians has keys in files 
 
 for i in `seq -s " " 2 "${Custod_QTY}"`
 do
+    echo "----------------------------------------------------------------------"
     echo "INFO: Make boc for signature No: ${i}"
 
     #======================================================================
@@ -196,7 +204,7 @@ do
     xxd -r -p ${KEYS_DIR}/msig${i}.keys.txt ${KEYS_DIR}/msig${i}.keys.bin
 
     #======================================================================
-    # make bocs for lite-client
+    # make boc for lite-client
     TVM_OUTPUT=$($HOME/bin/tvm_linker message $val_acc_addr \
         -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json \
         -m confirmTransaction \
@@ -206,26 +214,71 @@ do
     if [[ -z $(echo "$TVM_OUTPUT" | grep "boc file created") ]];then
         echo "###-ERROR: TVM linker CANNOT create boc file for ${i} signature!!! Can't continue. Exit."
         echo "$TVM_OUTPUT"
-        exit 1
+        exit 2
     fi
     mv "$(echo "$val_acc_addr"| cut -c 1-8)-msg-body.boc" "${ELECTIONS_WORK_DIR}/vaidator-${i}-msg.boc"
     echo "INFO: Make ${i} boc for lite-client ... DONE"
 
-    #======================================================================
-    # Send confirmations signatures by lite-client
-    echo "INFO: Send confirmations signatures by lite-client ..."
+    ########################################
+    Attempts_to_send=$SEND_ATTEMPTS
+    while [[ $Attempts_to_send -gt 0 ]]; do
+        #======================================================================
+        # Send confirmations signature by lite-client
+        echo "INFO: Send confirmations signature # ${i} by lite-client ..."
 
-    trap 'echo LC TIMEOUT EXIT' EXIT
-    $CALL_LC -rc "sendfile ${ELECTIONS_WORK_DIR}/vaidator-${i}-msg.boc" -rc 'quit' &> ${ELECTIONS_WORK_DIR}/validator-sig-${i}-result.log
-    trap - EXIT
-    vr_result=`cat ${ELECTIONS_WORK_DIR}/validator-sig-${i}-result.log | grep "external message status is 1"`
+        trap 'echo LC TIMEOUT EXIT' EXIT
+        $CALL_LC -rc "sendfile ${ELECTIONS_WORK_DIR}/vaidator-${i}-msg.boc" -rc 'quit' &> ${ELECTIONS_WORK_DIR}/validator-sig-${i}-result.log
+        trap - EXIT
+        vr_result=`cat ${ELECTIONS_WORK_DIR}/validator-sig-${i}-result.log | grep "external message status is 1"`
 
-    if [[ -z $vr_result ]]; then
-        echo "###-ERROR: Send message for confirmation ${i} FILED!!!"
-        "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Send message for confirmation ${i} FILED!!!" 2>&1 > /dev/null
-        exit 1
+        if [[ -z $vr_result ]]; then
+            echo "###-ERROR: Send message for confirmation ${i} FILED!!!"
+            exit 3
+        fi
+        sleep $SLEEP_TIMEOUT
+    
+        #======================================================================
+        # Get SC current state to file ${ELECTIONS_WORK_DIR}/$val_acc_addr.tvc
+        echo -n "Get SC state of acc: $MSIG_ADDR ... "    
+        LC_OUTPUT="$(Get_SC_current_state)"
+        result=`echo $LC_OUTPUT | grep "written StateInit of account"`
+        if [[ -z  $result ]];then
+            echo "###-ERROR: Cannot get account state. Can't continue. Sorry."
+            exit 4
+        fi
+        echo "Done."
+
+        #======================================================================
+        # Chech transaction signed and leaved
+        Trans_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getTransactions -p '{}' --decode-c6 $val_acc_addr | grep '"transactions":'| jq ".transactions|length"|tr -d '"'`
+        Trans_QTY=$((Trans_QTY))
+        if [[ $Trans_QTY -eq 0 ]];then
+            Attempts_to_send=0
+            echo "\$\$\$-SUCCESS: Transaction # $Trans_ID signed and send"
+            break
+        fi
+
+        #======================================================================
+        # Check signing success by get num of signatures
+       Signed_QTY=`$HOME/bin/tvm_linker test -a ${CONFIGS_DIR}/SafeMultisigWallet.abi.json -m getTransactions -p '{}' --decode-c6 $val_acc_addr | grep '"transactions":'| jq '.transactions[].signsReceived'|tr -d '"'`
+       Signed_QTY=$((Signed_QTY))
+       echo "Signed_QTY: $Signed_QTY | signsReceived: $signsReceived"
+        if [[ $signsReceived -ge $Signed_QTY ]];then
+            echo "+++-WARNING: Attempt # $Attempts_to_send to send signature # ${i} filed. Will try again.."
+            Attempts_to_send=$((Attempts_to_send - 1))
+        else
+            Attempts_to_send=0
+            signsReceived=$Signed_QTY
+        fi
+
+    done
+    ########################################
+
+    if [[ $Attempts_to_send -gt 0 ]];then
+        echo "###-ERROR: CANNOT sign transaction $Trans_ID by key # ${i} with pubkey: $msig_public from file: ${KEYS_DIR}/msig${i}.keys.json"
+        exit 5
     fi
-    echo "INFO: Submit transaction for CONFIRM ${i} was done SUCCESSFULLY!"
+    echo "INFO: Signing transaction $Trans_ID by custodian ${i} was done SUCCESSFULLY!"
 done
 
 # "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Transaction $Trans_ID for election confirmed." 2>&1 > /dev/null
@@ -234,3 +287,4 @@ echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
 
 trap - EXIT
 exit 0
+
