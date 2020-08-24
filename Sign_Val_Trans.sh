@@ -76,6 +76,11 @@ if [[ -z $(xxd -v 2>&1 | grep "Juergen Weigert") ]];then
     exit 1
 fi
 
+if [[ -z $(jq --help 2>/dev/null |grep -i "Usage"|cut -d ":" -f 1) ]];then
+    echo "###-ERROR: 'jq' not installed in PATH"
+    exit 1
+fi
+
 #=================================================
 # Call defines
 CALL_LC="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031 -t 5"
@@ -232,7 +237,7 @@ do
         vr_result=`cat ${ELECTIONS_WORK_DIR}/validator-sig-${i}-result.log | grep "external message status is 1"`
 
         if [[ -z $vr_result ]]; then
-            echo "###-ERROR: Send message for confirmation ${i} FILED!!!"
+            echo "###-ERROR: Send message for confirmation ${i} FAILED!!!"
             exit 3
         fi
         sleep $SLEEP_TIMEOUT
@@ -264,7 +269,7 @@ do
        Signed_QTY=$((Signed_QTY))
        echo "Signed_QTY: $Signed_QTY | signsReceived: $signsReceived"
         if [[ $signsReceived -ge $Signed_QTY ]];then
-            echo "+++-WARNING: Attempt # $Attempts_to_send to send signature # ${i} filed. Will try again.."
+            echo "+++-WARNING: Attempt # $Attempts_to_send to send signature # ${i} failed. Will try again.."
             Attempts_to_send=$((Attempts_to_send - 1))
         else
             Attempts_to_send=0
