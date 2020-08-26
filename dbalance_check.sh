@@ -22,16 +22,6 @@ set -o pipefail
 # set -u
 # set -x
 
-function not_found(){
-    if [[ -z $ACC_STATUS ]];then
-    echo
-    echo "Account not found!"
-    echo
-    fi
-}
-
-trap not_found EXIT
-
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
@@ -43,7 +33,7 @@ Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
 Proxy1_addr=`cat ${KEYS_DIR}/proxy1.addr`
 Validator_addr=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
 
-CALL_LT="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031"
+CALL_LT="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031 -t 5"
 
 Tik_INFO=`$CALL_LT -rc "getaccount ${Tik_addr}" -t "3" -rc "quit" 2>/dev/null `
 Depool_INFO=`$CALL_LT -rc "getaccount ${Depool_addr}" -t "3" -rc "quit" 2>/dev/null `
