@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-08-09 10:00:00
+# (C) Sergey Tyurin  2020-08-24 11:00:00
 
 # Disclaimer
 ##################################################################################################################
@@ -38,7 +38,6 @@ led_zer(){
 }
 # ===================================================
 
-
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
@@ -66,6 +65,7 @@ PARTS_LIST="$(echo "$LC_OUTPUT" | tr '[' '\n' | awk 'NF>0' | grep '196608' | awk
 
 echo "Participants list: "
 echo "'##'   'stake(tokens)'                                 'address'                /                  'adnl'"
+# echo "$(echo "$PARTS_LIST" | nl )"
 
 i=1
 IFS=$'\n'
@@ -81,3 +81,6 @@ printf "%3d" "$i"
 echo " $stake - $h_addr / $h_adnl"
 i=$((i+1))
 done
+
+echo "$HEX_LIST"
+
