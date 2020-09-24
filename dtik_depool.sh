@@ -1,6 +1,6 @@
 #!/bin/bash -eE
 
-# (C) Sergey Tyurin  2020-08-31 13:00:00
+# (C) Sergey Tyurin  2020-09-23 13:00:00
 
 # Disclaimer
 ##################################################################################################################
@@ -38,6 +38,13 @@
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
+
+###################
+TIMEDIFF_MAX=100
+SLEEP_TIMEOUT=30
+SEND_ATTEMPTS=10
+###################
+
 
 Depool_addr=`cat ${KEYS_DIR}/depool.addr`
 Helper_addr=`cat ${KEYS_DIR}/helper.addr`
@@ -86,7 +93,7 @@ TVM_OUTPUT=$($CALL_TL message $tik_acc_addr \
 
 if [[ -z $(echo $TVM_OUTPUT | grep "boc file created") ]];then
     echo "###-ERROR: TVM linker CANNOT create boc file!!! Can't continue."
-    exit 1
+    exit 2
 fi
 
 mv "$(echo "$tik_acc_addr"| cut -c 1-8)-msg-body.boc" "${ELECTIONS_WORK_DIR}/tik-msg.boc"
@@ -94,24 +101,42 @@ echo "INFO: Make boc for lite-client ... DONE"
 ##############################################################################
 ###############  Send query by lite-client ###################################
 ##############################################################################
+Last_Trans_lt=$($CALL_LC -rc "getaccount ${Depool_addr}" -t "3" -rc "quit" 2>/dev/null |grep 'last transaction lt'|awk '{print $5}')
+echo "Last Transaction local time: $Last_Trans_lt"
+echo "INFO: Send query to Depool by lite-client ..."
 
-echo "INFO: Send query to Elector by lite-client ..."
+Attempts_to_send=$SEND_ATTEMPTS
+while [[ $Attempts_to_send -gt 0 ]]; do
 
-trap 'echo LC TIMEOUT EXIT' EXIT
-$CALL_LC -rc "sendfile ${ELECTIONS_WORK_DIR}/tik-msg.boc" -rc 'quit' &> ${ELECTIONS_WORK_DIR}/tik-req-result.log
-trap - EXIT
+    $CALL_LC -rc "sendfile ${ELECTIONS_WORK_DIR}/tik-msg.boc" -rc 'quit' &> ${ELECTIONS_WORK_DIR}/tik-req-result.log
+    vr_result=`cat ${ELECTIONS_WORK_DIR}/tik-req-result.log | grep "external message status is 1"`
 
-vr_result=`cat ${ELECTIONS_WORK_DIR}/tik-req-result.log | grep "external message status is 1"`
+    if [[ -z $vr_result ]]; then
+        echo "###-ERROR: Send message for Tik FILED!!!"
+    fi
 
-if [[ -z $vr_result ]]; then
-    echo "###-ERROR: Send message for Tik FILED!!!"
-#    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Send message Tik depool FILED!!!" 2>&1 > /dev/null
-    exit 1
+    echo "INFO: Tik-tok transaction to depool submitted!"
+
+    echo "INFO: Check depool cranked ..."
+    sleep $SLEEP_TIMEOUT
+    Curr_Trans_lt=$($CALL_LC -rc "getaccount ${Depool_addr}" -t "3" -rc "quit" 2>/dev/null |grep 'last transaction lt'|awk '{print $5}')
+    echo "After Tik Last Transaction local time: $Curr_Trans_lt"
+    if [[ $Curr_Trans_lt == $Last_Trans_lt ]];then
+        echo "Attempt # $((SEND_ATTEMPTS + 1 - Attempts_to_send))/$SEND_ATTEMPTS"
+        echo "+++-WARNING: Depool does not crank up .. Repeat sending.."
+        Attempts_to_send=$((Attempts_to_send - 1))
+    else
+        echo "INFO: Depool tiked SUCCESSFULLY!"
+        break
+    fi
+done
+
+if [[ Attempts_to_send -eq 0   ]];then
+    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "ALARM!!! Can't TIK Depool!!!" 2>&1 > /dev/null
+    echo "###-=ERROR: ALARM!!! Depool DOES NOT CRANKED UP!!!"
+    echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
+    exit 3
 fi
-
-echo "INFO: Submit transaction for Tik depool was done SUCCESSFULLY!"
-
-# "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Sent Send message Tik depool  SUCCESS" 2>&1 > /dev/null
 
 date +"INFO: %F %T Depool Tiked"
 echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
