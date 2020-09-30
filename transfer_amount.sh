@@ -22,6 +22,9 @@ function tr_usage(){
 echo
 echo " use: ./transfer_amount.sh <SRC> <DST> <AMOUNT> [new]"
 echo " new - for transfer to not activated account (for creation)"
+echo " you have to place files in 'addresses' folder:"
+echo "  <SRC>.addr  <SRC>.keys.json"
+echo "  <DST>.addr"
 echo
 exit 0
 }
