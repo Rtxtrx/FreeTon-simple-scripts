@@ -20,7 +20,7 @@
 
 function tr_usage(){
 echo
-echo " use: transfer_amount.sh <SRC> <DST> <AMOUNT> [new]"
+echo " use: ./transfer_amount.sh <SRC> <DST> <AMOUNT> [new]"
 echo " new - for transfer to not activated account (for creation)"
 echo
 exit 0
