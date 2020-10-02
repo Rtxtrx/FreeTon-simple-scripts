@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-09-01 12:00:00
+# (C) Sergey Tyurin  2020-10-02 12:00:00
 
 # You have to have installed :
 #   'xxd' - is a part of vim-commons ( [apt/dnf/pkg] install vim[-common] )
