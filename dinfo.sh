@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-10-02 12:00:00
+# (C) Sergey Tyurin  2020-10-03 10:00:00
 
 # You have to have installed :
 #   'xxd' - is a part of vim-commons ( [apt/dnf/pkg] install vim[-common] )
@@ -30,14 +30,11 @@
 
 set -o pipefail
 
-if [ "$DEBUG" = "yes" ]; then
-    set -x
-fi
-
 ####################################
 # we can't work on desynced node
 TIMEDIFF_MAX=100
 MAX_FACTOR=${MAX_FACTOR:-3}
+export export LC_NUMERIC="C"
 ####################################
 
 echo
@@ -47,6 +44,8 @@ echo "INFO: $(basename "$0") BEGIN $(date +%s) / $(date)"
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
+
+set -u
 
 CALL_LC="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031 -t 5"
 CALL_VC="${TON_BUILD_DIR}/validator-engine-console/validator-engine-console -k ${KEYS_DIR}/client -p ${KEYS_DIR}/server.pub -a 127.0.0.1:3030 -t 5"
@@ -299,10 +298,15 @@ GreeText="\e[42m"
 PoolClosed=$(echo  "$Current_Depool_Info"|jq '.poolClosed'|tr -d '"')
 if [[ "$PoolClosed" == "false" ]];then
     PoolState="${GreeText}OPEN for participation!${NormText}"
-else
+fi
+if [[ "$PoolClosed" == "true" ]];then
     PoolState="${RedBlink}CLOSED!!! all stakes should be return to participants${NormText}"
 fi
-echo -e "Pool State: $PoolState"
+if [[ "$PoolClosed" == "false" ]] || [[ "$PoolClosed" == "true" ]];then
+    echo -e "Pool State: $PoolState"
+else
+    echo "###-ERROR: Can't determine the Depool state!! All following data is invalid!!!"
+fi
 echo
 echo "==================== Depool addresses ====================================="
 
@@ -329,7 +333,7 @@ echo "============================ Depool fees =================================
 PoolInterest=$(echo "$Current_Depool_Info"|jq '.interest'|tr -d '"')
 
 
-echo "           Pool Last Round Interest (%): $(echo "scale=3; $((PoolInterest)) / 100000000" | $CALL_BC)"
+echo "           Pool Last Round Interest (%): $(echo "scale=3; $((PoolInterest)) / 1000000000" | $CALL_BC)"
 
 
 ##############################################################################
@@ -362,31 +366,30 @@ Next_Round_ID=$(getnxt "$Round_2_ID" "$Round_1_ID" "$Round_0_ID")
 Prev_Round_Num=$((Prev_Round_ID - Round_0_ID))
 Curr_Round_Num=$((Curr_Round_ID - Round_0_ID))
 Next_Round_Num=$((Next_Round_ID - Round_0_ID))
-
 # ------------------------------------------------------------------------------------------------------------------------
 Prev_DP_Elec_ID=$(echo   "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].supposedElectedAt"|tr -d '"'| xargs printf "%10d\n")
 Prev_DP_Round_ID=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].id"|tr -d '"'| xargs printf "%d\n")
 Prev_Round_P_QTY=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].participantQty"|tr -d '"'| xargs printf "%4d\n")
 Prev_Round_Stake=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].stake"|tr -d '"'| xargs printf "%d\n")
 Prev_Round_Revard=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
-Prev_Round_Stake=$(printf '%12.3f' "$(echo $Prev_Round_Stake / 1000000000 | jq -nf /dev/stdin|tr '.' ',')")
-Prev_Round_Revard=$(printf '%12.3f' "$(echo $Prev_Round_Revard / 1000000000 | jq -nf /dev/stdin|tr '.' ',')")
+Prev_Round_Stake=$(printf '%12.3f' "$(echo $Prev_Round_Stake / 1000000000 | jq -nf /dev/stdin)")
+Prev_Round_Revard=$(printf '%12.3f' "$(echo $Prev_Round_Revard / 1000000000 | jq -nf /dev/stdin)")
 
 Curr_DP_Elec_ID=$(echo   "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].supposedElectedAt"|tr -d '"'| xargs printf "%10d\n")
 Curr_Round_P_QTY=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].participantQty"|tr -d '"'| xargs printf "%4d\n")
 Curr_DP_Round_ID=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].id"|tr -d '"'| xargs printf "%d\n")
 Curr_Round_Stake=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].stake"|tr -d '"'| xargs printf "%d\n")
 Curr_Round_Revard=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
-Curr_Round_Stake=$(printf '%12.3f' "$(echo $Curr_Round_Stake / 1000000000 | jq -nf /dev/stdin|tr '.' ',')")
-Curr_Round_Revard=$(printf '%12.3f' "$(echo $Curr_Round_Revard / 1000000000 | jq -nf /dev/stdin|tr '.' ',')")
+Curr_Round_Stake=$(printf '%12.3f' "$(echo $Curr_Round_Stake / 1000000000 | jq -nf /dev/stdin)")
+Curr_Round_Revard=$(printf '%12.3f' "$(echo $Curr_Round_Revard / 1000000000 | jq -nf /dev/stdin)")
 
 Next_DP_Elec_ID=$(echo   "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].supposedElectedAt"|tr -d '"'| xargs printf "%d\n")
 Next_DP_Round_ID=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].id"|tr -d '"'| xargs printf "%d\n")
 Next_Round_P_QTY=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].participantQty"|tr -d '"'| xargs printf "%4d\n")
 Next_Round_Stake=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].stake"|tr -d '"'| xargs printf "%d\n")
 Next_Round_Revard=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
-Next_Round_Stake=$(printf '%12.3f' "$(echo $Next_Round_Stake / 1000000000 | jq -nf /dev/stdin|tr '.' ',')")
-Next_Round_Revard=$(printf '%12.3f' "$(echo $Next_Round_Revard / 1000000000 | jq -nf /dev/stdin|tr '.' ',')")
+Next_Round_Stake=$(printf '%12.3f' "$(echo $Next_Round_Stake / 1000000000 | jq -nf /dev/stdin)")
+Next_Round_Revard=$(printf '%12.3f' "$(echo $Next_Round_Revard / 1000000000 | jq -nf /dev/stdin)")
 
 echo " --------------------------------------------------------------------------------------------------------------------------"
 echo "|                 |              Prev Round          |           Current Round          |              Next Round          |"
@@ -426,7 +429,7 @@ echo "===== Rounds participants QTY (prev/curr/next): $((Prev_Round_Part_QTY + 1
 
 Hex_Curr_Round_ID=$(echo "0x$(printf '%x\n' $Curr_Round_ID)")
 Hex_Prev_Round_ID=$(echo "0x$(printf '%x\n' $Prev_Round_ID)")
-
+set +u
 CRP_QTY=$((Curr_Round_Part_QTY - 1))
 for (( i=0; i <= $CRP_QTY; i++ ))
 do
@@ -443,17 +446,13 @@ done
 PoolPartsFrac=$(echo "$Current_Depool_Info"|jq '.participantFraction'|tr -d '"')
 PoolValFrac=$(echo "$Current_Depool_Info"|jq '.validatorFraction'|tr -d '"')
 
-
+echo
+echo "=========================================================================================="
 echo "Pool participants fraction: $((PoolValWalMinStake))"
 echo "   Pool validator fraction: $((PoolValFrac))"
-
-
-echo "=========================================================================================="
-
-
+echo
 echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
+echo "=========================================================================================="
 
 trap - EXIT
 exit 0
-
-
