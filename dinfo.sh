@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-10-03 10:00:00
+# (C) Sergey Tyurin  2020-10-05 08:00:00
 
 # You have to have installed :
 #   'xxd' - is a part of vim-commons ( [apt/dnf/pkg] install vim[-common] )
@@ -34,7 +34,7 @@ set -o pipefail
 # we can't work on desynced node
 TIMEDIFF_MAX=100
 MAX_FACTOR=${MAX_FACTOR:-3}
-export export LC_NUMERIC="C"
+export LC_NUMERIC="C"
 ####################################
 
 echo
@@ -44,8 +44,6 @@ echo "INFO: $(basename "$0") BEGIN $(date +%s) / $(date)"
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
-
-set -u
 
 CALL_LC="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031 -t 5"
 CALL_VC="${TON_BUILD_DIR}/validator-engine-console/validator-engine-console -k ${KEYS_DIR}/client -p ${KEYS_DIR}/server.pub -a 127.0.0.1:3030 -t 5"
@@ -165,7 +163,10 @@ function getnxt() {
 }
 ##############################################################################
 # Load addresses and set variables
+Inp_Depool_addr=$1
 Depool_addr=`cat ${KEYS_DIR}/depool.addr`
+Depool_addr=${Inp_Depool_addr:=$Depool_addr}
+
 dpc_addr=`echo $Depool_addr | cut -d ':' -f 2`
 Helper_addr=`cat ${KEYS_DIR}/helper.addr`
 Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
@@ -372,6 +373,7 @@ Prev_DP_Round_ID=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num
 Prev_Round_P_QTY=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].participantQty"|tr -d '"'| xargs printf "%4d\n")
 Prev_Round_Stake=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].stake"|tr -d '"'| xargs printf "%d\n")
 Prev_Round_Revard=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
+echo "---DEBUG: Prev_Round_Stake: $Prev_Round_Stake ; Prev_Round_Revard: $Prev_Round_Revard"
 Prev_Round_Stake=$(printf '%12.3f' "$(echo $Prev_Round_Stake / 1000000000 | jq -nf /dev/stdin)")
 Prev_Round_Revard=$(printf '%12.3f' "$(echo $Prev_Round_Revard / 1000000000 | jq -nf /dev/stdin)")
 
@@ -401,8 +403,6 @@ echo "|         Stake   |           $Prev_Round_Stake           |           $Cur
 echo "|        Revard   |           $Prev_Round_Revard           |           $Curr_Round_Revard           |           $Next_Round_Revard           |"
 
 
-
-
 echo
 echo "=================== Current participants info in the depool ==================="
 
@@ -410,7 +410,7 @@ echo "=================== Current participants info in the depool ==============
 # Num_of_participants=`cat current_participants.lst | grep '"0:'| tr -d ' '|tr -d ',' |tr -d '"'| nl | tail -1 |awk '{print $1}'`
 Num_of_participants=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipants -p "{}" --decode-c6 $dpc_addr | grep 'participants' | jq '.participants|length')
 echo "Current Number of participants: $Num_of_participants"
-
+echo
 
 
 Prev_Round_Part_QTY=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].participantQty"|tr -d '"'| xargs printf "%d\n")
@@ -429,7 +429,7 @@ echo "===== Rounds participants QTY (prev/curr/next): $((Prev_Round_Part_QTY + 1
 
 Hex_Curr_Round_ID=$(echo "0x$(printf '%x\n' $Curr_Round_ID)")
 Hex_Prev_Round_ID=$(echo "0x$(printf '%x\n' $Prev_Round_ID)")
-set +u
+
 CRP_QTY=$((Curr_Round_Part_QTY - 1))
 for (( i=0; i <= $CRP_QTY; i++ ))
 do
@@ -456,3 +456,5 @@ echo "==========================================================================
 
 trap - EXIT
 exit 0
+
+
