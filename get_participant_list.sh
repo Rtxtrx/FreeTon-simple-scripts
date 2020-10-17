@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-08-24 11:00:00
+# (C) Sergey Tyurin  2020-10-01 11:00:00
 
 # Disclaimer
 ##################################################################################################################
@@ -18,6 +18,7 @@
 # Author(s) retain the right to alter this disclaimer at any time.
 ##################################################################################################################
 
+export LC_NUMERIC="C"
 # ===================================================
 dec2hex() {
     ival="${1^^}"
@@ -37,6 +38,7 @@ led_zer(){
     echo " "
 }
 # ===================================================
+
 
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
@@ -58,29 +60,36 @@ trap - EXIT
 elector_addr=`echo "-1:"$elector_addr`
 echo "INFO: Elector Address: $elector_addr"
 
+elections_id=$($CALL_LC -rc "runmethod $elector_addr active_election_id" -rc "quit" 2>/dev/null | grep "result:" | awk '{print $3}')
+
 LC_OUTPUT="$($CALL_LC -rc "runmethodfull $elector_addr participant_list_extended" -rc "quit" 2>/dev/null)"
 
 # public key : [ stake, max_factor, wallet (addr), adnl (adnl_addr) ]
-PARTS_LIST="$(echo "$LC_OUTPUT" | tr '[' '\n' | awk 'NF>0' | grep '196608' | awk '{print$1 / 1000000000 " " $3 " " $4}'| sort -r)"
+PARTS_LIST="$(echo "$LC_OUTPUT" | tr '[' '\n' | awk 'NF>0' | grep ']]' | awk '{print$1 / 1000000000 " "$2 / 65536  " " $3 " " $4}'| sort -rn)"
 
-echo "Participants list: "
-echo "'##'   'stake(tokens)'                                 'address'                /                  'adnl'"
+echo "Participants list at $(date +'%F %T %Z')  for elections ID $elections_id : "
+echo " '#'    'stake'   'mf'                                       'address'                     /                  'adnl'"
 # echo "$(echo "$PARTS_LIST" | nl )"
 
+total_stake=0
 i=1
 IFS=$'\n'
 for str in $(echo "$PARTS_LIST")
 do
 stake=`echo "$str" | cut -d " " -f 1`
-d_addr=`echo "$str" | cut -d " " -f 2 | awk '{ if(length<78) printf "%0*d%s\n",78-length,0,$0; else print }'`
+total_stake=$(echo "$total_stake + $stake"|bc)
+mfctr=`echo "$str" |cut -d " " -f 2`
+# mfctr=$((mfctr / 65536 ))
+d_addr=`echo "$str" | cut -d " " -f 3 | awk '{ if(length<78) printf "%0*d%s\n",78-length,0,$0; else print }'`
 h_addr='-1:'`dec2hex "$d_addr" | awk '{ if(length<64) printf "%0*d%s\n",64-length,0,$0; else print }' | tr "[:upper:]" "[:lower:]"`
-d_adnl=`echo "$str" | cut -d " " -f 3 | tr -d ']]' | tr -d ')' | awk '{ if(length<78) printf "%0*d%s\n",78-length,0,$0; else print }'`
+d_adnl=`echo "$str" | cut -d " " -f 4 | tr -d ']]' | tr -d ')' | awk '{ if(length<78) printf "%0*d%s\n",78-length,0,$0; else print }'`
 h_adnl=`dec2hex "$d_adnl" | awk '{ if(length<64) printf "%0*d%s\n",64-length,0,$0; else print }' | tr "[:upper:]" "[:lower:]"`
 
 printf "%3d" "$i"
-echo " $stake - $h_addr / $h_adnl"
+printf " %12.3f" "$stake"
+echo " - $mfctr - $h_addr / $h_adnl"
 i=$((i+1))
 done
-
-echo "$HEX_LIST"
-
+echo
+echo "Total stake in elector: $total_stake"
+echo "====================================================================================================================================="
