@@ -51,13 +51,14 @@ do
 # generate or read seed phrases
 [[ ! -f $KEY_FILES_DIR/seed${i}.txt ]] && SeedPhrase=`${UTILS_DIR}/tonos-cli genphrase | grep "Seed phrase:" | cut -d' ' -f3-14 | tee $KEY_FILES_DIR/seed${i}.txt`
 [[ -f $KEY_FILES_DIR/seed${i}.txt ]] && SeedPhrase=`cat $KEY_FILES_DIR/seed${i}.txt`
+SeedPhrase=$(echo $SeedPhrase | tr -d '"')
 
 # generate public key
-PubKey=`${UTILS_DIR}/tonos-cli genpubkey "$SeedPhrase${i}" | tee $KEY_FILES_DIR/PubKeyCard${i}.txt | grep "Public key:" | awk '{print $3}' | tee $KEY_FILES_DIR/pub${i}.key`
+PubKey=`${UTILS_DIR}/tonos-cli genpubkey "$SeedPhrase" | tee $KEY_FILES_DIR/PubKeyCard${i}.txt | grep "Public key:" | awk '{print $3}' | tee $KEY_FILES_DIR/pub${i}.key`
 echo "PubKey${i}: $PubKey"
 
 # generate pub/sec keypair
-${UTILS_DIR}/tonos-cli getkeypair "$KEY_FILES_DIR/msig${i}.keys.json" "$SeedPhrase${i}" &> /dev/null
+${UTILS_DIR}/tonos-cli getkeypair "$KEY_FILES_DIR/msig${i}.keys.json" "$SeedPhrase" &> /dev/null
 done
 #=======================================================================================
 
