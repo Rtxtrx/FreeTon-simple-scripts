@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-10-05 08:00:00
+# (C) Sergey Tyurin  2020-10-20 08:00:00
 
 # You have to have installed :
 #   'xxd' - is a part of vim-commons ( [apt/dnf/pkg] install vim[-common] )
@@ -184,8 +184,7 @@ if [[ -z $Depool_addr ]];then
 fi
 
 val_acc_addr=`echo "${Validator_addr}" | cut -d ':' -f 2`
-echo "INFO: validator account address: $Validator_addr"
-echo "INFO: depool   contract address: $Depool_addr"
+echo "INFO: Local validator account address: $Validator_addr"
 ELECTIONS_WORK_DIR="${KEYS_DIR}/elections"
 [[ ! -d ${ELECTIONS_WORK_DIR} ]] && mkdir -p ${ELECTIONS_WORK_DIR}
 chmod +x ${ELECTIONS_WORK_DIR}
@@ -314,6 +313,7 @@ echo "==================== Depool addresses ====================================
 dp_val_wal=$(echo "$Current_Depool_Info" | jq ".validatorWallet")
 dp_proxy0=$(echo "$Current_Depool_Info" | jq "[.proxies[]]|.[0]")
 dp_proxy1=$(echo "$Current_Depool_Info" | jq "[.proxies[]]|.[1]")
+echo "Depool contract address:     \"$Depool_addr\""
 echo "Depool Owner/validator addr: $dp_val_wal"
 echo "Depool proxy #0:            $dp_proxy0"
 echo "Depool proxy #1:            $dp_proxy1"
@@ -372,26 +372,25 @@ Prev_DP_Elec_ID=$(echo   "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num
 Prev_DP_Round_ID=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].id"|tr -d '"'| xargs printf "%d\n")
 Prev_Round_P_QTY=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].participantQty"|tr -d '"'| xargs printf "%4d\n")
 Prev_Round_Stake=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].stake"|tr -d '"'| xargs printf "%d\n")
-Prev_Round_Revard=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
-echo "---DEBUG: Prev_Round_Stake: $Prev_Round_Stake ; Prev_Round_Revard: $Prev_Round_Revard"
+Prev_Round_Reward=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Prev_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
 Prev_Round_Stake=$(printf '%12.3f' "$(echo $Prev_Round_Stake / 1000000000 | jq -nf /dev/stdin)")
-Prev_Round_Revard=$(printf '%12.3f' "$(echo $Prev_Round_Revard / 1000000000 | jq -nf /dev/stdin)")
+Prev_Round_Reward=$(printf '%12.3f' "$(echo $Prev_Round_Reward / 1000000000 | jq -nf /dev/stdin)")
 
 Curr_DP_Elec_ID=$(echo   "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].supposedElectedAt"|tr -d '"'| xargs printf "%10d\n")
 Curr_Round_P_QTY=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].participantQty"|tr -d '"'| xargs printf "%4d\n")
 Curr_DP_Round_ID=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].id"|tr -d '"'| xargs printf "%d\n")
 Curr_Round_Stake=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].stake"|tr -d '"'| xargs printf "%d\n")
-Curr_Round_Revard=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
+Curr_Round_Reward=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Curr_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
 Curr_Round_Stake=$(printf '%12.3f' "$(echo $Curr_Round_Stake / 1000000000 | jq -nf /dev/stdin)")
-Curr_Round_Revard=$(printf '%12.3f' "$(echo $Curr_Round_Revard / 1000000000 | jq -nf /dev/stdin)")
+Curr_Round_Reward=$(printf '%12.3f' "$(echo $Curr_Round_Reward / 1000000000 | jq -nf /dev/stdin)")
 
 Next_DP_Elec_ID=$(echo   "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].supposedElectedAt"|tr -d '"'| xargs printf "%d\n")
 Next_DP_Round_ID=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].id"|tr -d '"'| xargs printf "%d\n")
 Next_Round_P_QTY=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].participantQty"|tr -d '"'| xargs printf "%4d\n")
 Next_Round_Stake=$(echo  "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].stake"|tr -d '"'| xargs printf "%d\n")
-Next_Round_Revard=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
+Next_Round_Reward=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[$Next_Round_Num].rewards"|tr -d '"'| xargs printf "%d\n")
 Next_Round_Stake=$(printf '%12.3f' "$(echo $Next_Round_Stake / 1000000000 | jq -nf /dev/stdin)")
-Next_Round_Revard=$(printf '%12.3f' "$(echo $Next_Round_Revard / 1000000000 | jq -nf /dev/stdin)")
+Next_Round_Reward=$(printf '%12.3f' "$(echo $Next_Round_Reward / 1000000000 | jq -nf /dev/stdin)")
 
 echo " --------------------------------------------------------------------------------------------------------------------------"
 echo "|                 |              Prev Round          |           Current Round          |              Next Round          |"
@@ -400,7 +399,7 @@ echo "|        Seq No   |       $(printf '%12d' "$Prev_Round_ID")               
 echo "|            ID   | $Prev_DP_Elec_ID / $(echo "$Prev_DP_Elec_ID" | gawk '{print strftime("%Y-%m-%d %H:%M:%S", $1)}') | $Curr_DP_Elec_ID / $(echo "$Curr_DP_Elec_ID" | gawk '{print strftime("%Y-%m-%d %H:%M:%S", $1)}') |                  $Next_DP_Elec_ID               |"
 echo "| Participant QTY |               $Prev_Round_P_QTY               |               $Curr_Round_P_QTY               |               $Next_Round_P_QTY               |"
 echo "|         Stake   |           $Prev_Round_Stake           |           $Curr_Round_Stake           |           $Next_Round_Stake           |"
-echo "|        Revard   |           $Prev_Round_Revard           |           $Curr_Round_Revard           |           $Next_Round_Revard           |"
+echo "|        Reward   |           $Prev_Round_Reward           |           $Curr_Round_Reward           |           $Next_Round_Reward           |"
 
 
 echo
@@ -436,10 +435,10 @@ do
     Curr_Part_Addr=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipants -p "{}" --decode-c6 $dpc_addr | grep 'participants' | jq ".participants|.[$i]")
     Curr_Ord_Stake=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipantInfo -p "{\"addr\":$Curr_Part_Addr}" --decode-c6 $dpc_addr|grep -i 'withdrawValue' | jq ".stakes.\"$Hex_Curr_Round_ID\""|tr -d '"')
     Prev_Ord_Stake=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipantInfo -p "{\"addr\":$Curr_Part_Addr}" --decode-c6 $dpc_addr|grep -i 'withdrawValue' | jq ".stakes.\"$Hex_Prev_Round_ID\""|tr -d '"')
-    Revard=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipantInfo -p "{\"addr\":$Curr_Part_Addr}" --decode-c6 $dpc_addr|grep -i 'withdrawValue' | jq ".reward"|tr -d '"')
+    Reward=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipantInfo -p "{\"addr\":$Curr_Part_Addr}" --decode-c6 $dpc_addr|grep -i 'withdrawValue' | jq ".reward"|tr -d '"')
     Curr_Lck_Stake=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipantInfo -p "{\"addr\":$Curr_Part_Addr}" --decode-c6 $dpc_addr|grep -i 'withdrawValue' | jq ".locks.\"$Hex_Curr_Round_ID\".amount" |tr -d '"')
 
-    echo "$(printf '%4d' $(($i + 1))) $Curr_Part_Addr Reward: $((Revard / 1000000000)) ;  Stakes: $((Prev_Ord_Stake / 1000000000)) / $((Curr_Ord_Stake / 1000000000)) ; Lock: $((Curr_Lck_Stake / 1000000000))"
+    echo "$(printf '%4d' $(($i + 1))) $Curr_Part_Addr Reward: $((Reward / 1000000000)) ;  Stakes: $((Prev_Ord_Stake / 1000000000)) / $((Curr_Ord_Stake / 1000000000)) ; Lock: $((Curr_Lck_Stake / 1000000000))"
 done
 
 
@@ -456,5 +455,3 @@ echo "==========================================================================
 
 trap - EXIT
 exit 0
-
-
