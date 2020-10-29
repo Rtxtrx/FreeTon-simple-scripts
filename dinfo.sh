@@ -439,7 +439,7 @@ do
     Revard=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipantInfo -p "{\"addr\":$Curr_Part_Addr}" --decode-c6 $dpc_addr|grep -i 'withdrawValue' | jq ".reward"|tr -d '"')
     Curr_Lck_Stake=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getParticipantInfo -p "{\"addr\":$Curr_Part_Addr}" --decode-c6 $dpc_addr|grep -i 'withdrawValue' | jq ".locks.\"$Hex_Curr_Round_ID\".amount" |tr -d '"')
 
-    echo "$(printf '%4d' $(($i + 1))) $Curr_Part_Addr Revard: $((Revard / 1000000000)) ;  Stakes: $((Prev_Ord_Stake / 1000000000)) / $((Curr_Ord_Stake / 1000000000)) ; Lock: $((Curr_Lck_Stake / 1000000000))"
+    echo "$(printf '%4d' $(($i + 1))) $Curr_Part_Addr Reward: $((Revard / 1000000000)) ;  Stakes: $((Prev_Ord_Stake / 1000000000)) / $((Curr_Ord_Stake / 1000000000)) ; Lock: $((Curr_Lck_Stake / 1000000000))"
 done
 
 
