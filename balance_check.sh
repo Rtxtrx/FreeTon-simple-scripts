@@ -1,40 +1,52 @@
-#!/bin/bash
+#!/bin/bash -eE
 
-# Disclaimer
-##################################################################################################################
-# You running this script/function means you will not blame the author(s),
-# if this breaks your stuff. This script/function is provided AS IS without warranty of any kind. 
-# Author(s) disclaim all implied warranties including, without limitation, 
-# any implied warranties of merchantability or of fitness for a particular purpose. 
-# The entire risk arising out of the use or performance of the sample scripts and documentation remains with you.
-# In no event shall author(s) be held liable for any damages whatsoever 
-# (including, without limitation, damages for loss of business profits, business interruption, 
-# loss of business information, or other pecuniary loss) arising out of the use of or inability 
-# to use the script or documentation. Neither this script/function, 
-# nor any part of it other than those parts that are explicitly copied from others, 
-# may be republished without author(s) express written permission. 
-# Author(s) retain the right to alter this disclaimer at any time.
-##################################################################################################################
+set -o pipefail
+# set -u
+# set -x
+
+function not_found(){
+    if [[ -z $ACC_STATUS ]];then
+    echo
+    echo "Account not found!"
+    echo
+    fi
+}
+
+trap not_found EXIT
 
 SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
 
-MY_ACCOUNT=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
-
 ACCOUNT=$1
-ACCOUNT=${ACCOUNT:=$MY_ACCOUNT}
+if [[ -z $ACCOUNT ]];then
+    MY_ACCOUNT=`cat "${KEYS_DIR}/${HOSTNAME}.addr"`
+    if [[ -z $MY_ACCOUNT ]];then
+        echo " Can't find ${KEYS_DIR}/${HOSTNAME}.addr"
+        exit 1
+    else
+        ACCOUNT=$MY_ACCOUNT
+    fi
+else
+    acc_fmt=`echo "$ACCOUNT" |  awk -F ':' '{print $2}'`
+    [[ -z $acc_fmt ]] && ACCOUNT=`cat "${KEYS_DIR}/${ACCOUNT}.addr"`
+fi
 
-BALANCE_INFO=`${UTILS_DIR}/tonos-cli account $ACCOUNT || echo "ERROR get balance" && exit 0`
-ACC_STATUS=`echo "$BALANCE_INFO" | grep acc_type | awk '{ print $2 }'`
-AMOUNT=`echo "$BALANCE_INFO" | grep balance | awk '{ print $2 }'`
-LAST_TR_TIME=`echo "$BALANCE_INFO" | grep last_paid | awk '{ print strftime("%Y-%m-%d %H:%M:%S", $2)}'`
+CALL_LT="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub -a 127.0.0.1:3031"
+
+ACCOUNT_INFO=`$CALL_LT -rc "getaccount ${ACCOUNT}" -t "3" -rc "quit" 2>/dev/null `
+
+ACC_STATUS=`echo "$ACCOUNT_INFO" | grep "state:" | awk -F "(" '{ print $2 }'`
+AMOUNT=`echo "$ACCOUNT_INFO" |grep "account balance" | tr -d "ng"|awk '{print $4}'`
+LAST_TR_TIME=`echo "$ACCOUNT_INFO" | grep "last_paid" | gawk -F ":" '{print strftime("%Y-%m-%d %H:%M:%S", $5)}'`
 
 echo
 echo "Account: $ACCOUNT"
+echo "Time Now: $(date  +'%Y-%m-%d %H:%M:%S')"
 echo "Status: $ACC_STATUS"
 echo "Has balance : $((AMOUNT/1000000000)) tokens"
 echo "Last operation time: $LAST_TR_TIME"
+# "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Current balance: $((AMOUNT/1000000000))" 2>&1 > /dev/null
 echo "=================================================================================================="
 
 exit 0
