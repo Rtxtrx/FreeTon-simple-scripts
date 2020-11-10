@@ -42,8 +42,8 @@ echo
 echo "Account: $ACCOUNT"
 echo "Time Now: $(date  +'%Y-%m-%d %H:%M:%S')"
 echo "Status: $ACC_STATUS"
-echo "Has balance : $(LC_NUMERIC=en_US printf "%'.2f" $((AMOUNT/1000000000))) tokens"
+echo "Has balance : $(LC_NUMERIC="C" printf "%'.2f" $((AMOUNT/1000000000))) tokens"
 echo "Last operation time: $LAST_TR_TIME"
 # "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Current balance: $((AMOUNT/1000000000))" 2>&1 > /dev/null
 echo "=================================================================================================="
-
+exit 0
