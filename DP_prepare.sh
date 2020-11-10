@@ -36,10 +36,10 @@ cd $KEY_FILES_DIR
 [[ ! -f depool_seed.txt ]] && tonos-cli genphrase > depool_seed.txt
 [[ ! -f helper_seed.txt ]] && tonos-cli genphrase > helper_seed.txt
 
-tonos-cli getkeypair proxy0.json "$(cat proxy0_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14)"
-tonos-cli getkeypair proxy1.json "$(cat proxy1_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14)"
-tonos-cli getkeypair depool.json "$(cat depool_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14)"
-tonos-cli getkeypair helper.json "$(cat helper_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14)"
+tonos-cli getkeypair proxy0.json "$(cat proxy0_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14 | tr -d '"')"
+tonos-cli getkeypair proxy1.json "$(cat proxy1_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14 | tr -d '"')"
+tonos-cli getkeypair depool.json "$(cat depool_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14 | tr -d '"')"
+tonos-cli getkeypair helper.json "$(cat helper_seed.txt | grep "Seed phrase:" | cut -d' ' -f3-14 | tr -d '"')"
 
 tonos-cli genaddr $SCs_DIR/DePoolProxy.tvc  $SCs_DIR/DePoolProxy.abi.json  --setkey proxy0.json --wc -1 | tee proxy0.addr-card.txt | grep "Raw address:" | awk '{print $3}' | tee proxy0.addr
 tonos-cli genaddr $SCs_DIR/DePoolProxy.tvc  $SCs_DIR/DePoolProxy.abi.json  --setkey proxy1.json --wc -1 | tee proxy1.addr-card.txt | grep "Raw address:" | awk '{print $3}' | tee proxy1.addr
