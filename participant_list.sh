@@ -131,3 +131,4 @@ echo "You will start validate from $(GET_CHAIN_DATE "$election_id")"
 echo "-----------------------------------------------------------------------------------------------------"
 exit 0
 
+

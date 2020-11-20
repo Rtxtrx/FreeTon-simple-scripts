@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# (C) Sergey Tyurin  2020-10-20 08:00:00
+# (C) Sergey Tyurin  2020-11-16 19:00:00
 
 # You have to have installed :
 #   'xxd' - is a part of vim-commons ( [apt/dnf/pkg] install vim[-common] )
@@ -59,17 +59,17 @@ fi
 ##############################################################################
 # Test binaries
 if [[ -z $($CALL_TL -V | grep "TVM linker") ]];then
-    echo "###-ERROR: TVM linker not installed in PATH"
+    echo "###-ERROR(line $LINENO): TVM linker not installed in PATH"
     exit 1
 fi
 
 if [[ -z $(xxd -v 2>&1 | grep "Juergen Weigert") ]];then
-    echo "###-ERROR: 'xxd' not installed in PATH"
+    echo "###-ERROR(line $LINENO): 'xxd' not installed in PATH"
     exit 1
 fi
 
 if [[ -z $(jq --help 2>/dev/null |grep -i "Usage"|cut -d ":" -f 1) ]];then
-    echo "###-ERROR: 'jq' not installed in PATH"
+    echo "###-ERROR(line $LINENO): 'jq' not installed in PATH"
     exit 1
 fi
 #=================================================
@@ -77,7 +77,7 @@ fi
 Node_Keys=`$CALL_VC -c "getvalidators" -c "quit" 2>/dev/null | grep "validator0"`
 
 if [[ -z $Node_Keys ]];then
-    echo "###-ERROR: You engine hasn't command 'getvalidators'. Get & install new engine from 'https://github.com/FreeTON-Network/FreeTON-Node'"
+    echo "###-ERROR(line $LINENO): You engine hasn't command 'getvalidators'. Get & install new engine from 'https://github.com/FreeTON-Network/FreeTON-Node'"
 #    exit 1
 fi
 
@@ -115,7 +115,7 @@ function Get_SC_current_state() {
     # result: file named xxx...xxx.tvc
     # return: Output of lite-client executing
     local w_acc="$1" 
-    [[ -z $w_acc ]] && echo "###-ERROR: func Get_SC_current_state: empty address" && exit 1
+    [[ -z $w_acc ]] && echo "###-ERROR(line $LINENO): func Get_SC_current_state: empty address" && exit 1
     local s_acc=`echo "${w_acc}" | cut -d ':' -f 2`
     rm -f ${s_acc}.tvc
     trap 'echo LC TIMEOUT EXIT' EXIT
@@ -123,7 +123,7 @@ function Get_SC_current_state() {
     trap - EXIT
     local result=`echo $LC_OUTPUT | grep "written StateInit of account"`
     if [[ -z  $result ]];then
-        echo "###-ERROR: Cannot get account state. Can't continue. Sorry."
+        echo "###-ERROR(line $LINENO): Cannot get account state. Can't continue. Sorry."
         exit 1
     fi
     echo "$LC_OUTPUT"
@@ -168,18 +168,18 @@ Depool_addr=`cat ${KEYS_DIR}/depool.addr`
 Depool_addr=${Inp_Depool_addr:=$Depool_addr}
 
 dpc_addr=`echo $Depool_addr | cut -d ':' -f 2`
-Helper_addr=`cat ${KEYS_DIR}/helper.addr`
-Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
-Proxy1_addr=`cat ${KEYS_DIR}/proxy1.addr`
+[[ -f  ${KEYS_DIR}/helper.addr ]] && Helper_addr=`cat ${KEYS_DIR}/helper.addr`
+[[ -f ${KEYS_DIR}/proxy0.addr ]] && Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
+[[ -f ${KEYS_DIR}/proxy1.addr ]] && Proxy1_addr=`cat ${KEYS_DIR}/proxy1.addr`
 Validator_addr=`cat ${KEYS_DIR}/${VALIDATOR_NAME}.addr`
 Work_Chain=`echo "${Validator_addr}" | cut -d ':' -f 1`
 
 if [[ -z $Validator_addr ]];then
-    echo "###-ERROR: Can't find validator address! ${KEYS_DIR}/${VALIDATOR_NAME}.addr"
+    echo "###-ERROR(line $LINENO): Can't find validator address! ${KEYS_DIR}/${VALIDATOR_NAME}.addr"
     exit 1
 fi
 if [[ -z $Depool_addr ]];then
-    echo "###-ERROR: Can't find depool address! ${KEYS_DIR}/depool.addr"
+    echo "###-ERROR(line $LINENO): Can't find depool address! ${KEYS_DIR}/depool.addr"
     exit 1
 fi
 
@@ -200,8 +200,8 @@ CURR_TD_NOW=`echo "${VEC_OUTPUT}" | grep unixtime | awk '{print $2}'`
 CHAIN_TD=`echo "${VEC_OUTPUT}" | grep masterchainblocktime | awk '{print $2}'`
 TIME_DIFF=$((CURR_TD_NOW - CHAIN_TD))
 if [[ $TIME_DIFF -gt $TIMEDIFF_MAX ]];then
-    echo "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF"
-#    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF" 2>&1 > /dev/null
+    echo "###-ERROR(line $LINENO): Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF"
+#    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR(line $LINENO): Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF" 2>&1 > /dev/null
     exit 1
 fi
 echo "INFO: Current TimeDiff: $TIME_DIFF"
@@ -256,7 +256,7 @@ fi
 LC_OUTPUT="$(Get_SC_current_state "$Depool_addr")"
 result=`echo $LC_OUTPUT | grep "written StateInit of account"`
 if [[ -z  $result ]];then
-    echo "###-ERROR: Cannot get account state. Can't continue. Sorry."
+    echo "###-ERROR(line $LINENO): Cannot get account state. Can't continue. Sorry."
     exit 1
 fi
 # echo "Done."
@@ -269,25 +269,17 @@ Current_Depool_Info=$($CALL_TL test -a ${DSCs_DIR}/DePool.abi.json -m getDePoolI
 #######################################################################################
 # Get Depool Info
 # returns (
-#         uint64 minStake,
-#         uint64 minRoundStake,
-#         uint64 minValidatorStake,
-#         address validatorWallet,
-#         address[] proxies,
-#         bool poolClosed,
-#         uint64 interest,
-#         uint64 addStakeFee,
-#         uint64 addVestingOrLockFee,
-#         uint64 removeOrdinaryStakeFee,
-#         uint64 withdrawPartAfterCompletingFee,
-#         uint64 withdrawAllAfterCompletingFee,
-#         uint64 transferStakeFee,
-#         uint64 retOrReinvFee,
-#         uint64 answerMsgFee,
-#         uint64 proxyFee,
-#         uint64 participantFraction,
-#         uint64 validatorFraction,
-#         uint64 validatorWalletMinStake
+#    {"name":"poolClosed","type":"bool"},
+#    {"name":"minStake","type":"uint64"},
+#    {"name":"validatorAssurance","type":"uint64"},
+#    {"name":"participantRewardFraction","type":"uint8"},
+#    {"name":"validatorRewardFraction","type":"uint8"},
+#    {"name":"balanceThreshold","type":"uint64"},
+#    {"name":"validatorWallet","type":"address"},
+#    {"name":"proxies","type":"address[]"},
+#    {"name":"stakeFee","type":"uint64"},
+#    {"name":"retOrReinvFee","type":"uint64"},
+#    {"name":"proxyFee","type":"uint64"}
 
 echo 
 echo "==================== Current Depool State ====================================="
@@ -305,14 +297,18 @@ fi
 if [[ "$PoolClosed" == "false" ]] || [[ "$PoolClosed" == "true" ]];then
     echo -e "Pool State: $PoolState"
 else
-    echo "###-ERROR: Can't determine the Depool state!! All following data is invalid!!!"
+    echo "###-ERROR(line $LINENO): Can't determine the Depool state!! All following data is invalid!!!"
 fi
 echo
 echo "==================== Depool addresses ====================================="
 
 dp_val_wal=$(echo "$Current_Depool_Info" | jq ".validatorWallet")
-dp_proxy0=$(echo "$Current_Depool_Info" | jq "[.proxies[]]|.[0]")
-dp_proxy1=$(echo "$Current_Depool_Info" | jq "[.proxies[]]|.[1]")
+dp_proxy0=$(echo "$Current_Depool_Info" | jq "[.proxies[]]|.[0]"|tr -d '"')
+dp_proxy1=$(echo "$Current_Depool_Info" | jq "[.proxies[]]|.[1]"|tr -d '"')
+
+[[ ! -f ${KEYS_DIR}/proxy0.addr ]] && echo "$dp_proxy0" > ${KEYS_DIR}/proxy0.addr
+[[ ! -f ${KEYS_DIR}/proxy1.addr ]] && echo "$dp_proxy1" > ${KEYS_DIR}/proxy1.addr
+
 echo "Depool contract address:     \"$Depool_addr\""
 echo "Depool Owner/validator addr: $dp_val_wal"
 echo "Depool proxy #0:            $dp_proxy0"
@@ -322,7 +318,7 @@ echo "================ Minimal Stakes for participant in the depool ============
 
 PoolMinStake=$(echo "$Current_Depool_Info"|jq '.minStake'|tr -d '"')
 PoolMinRoundStake=$(echo "$Current_Depool_Info"|jq '.minRoundStake'|tr -d '"')
-PoolValMinStake=$(echo "$Current_Depool_Info"|jq '.minValidatorStake'|tr -d '"')
+PoolValMinStake=$(echo "$Current_Depool_Info"|jq '.validatorAssurance'|tr -d '"')
 PoolValWalMinStake=$(echo "$Current_Depool_Info"|jq '.validatorWalletMinStake'|tr -d '"')
 
 echo "                Pool Min Stake (Tk): $((PoolMinStake / 1000000000))"
@@ -336,25 +332,6 @@ PoolInterest=$(echo "$Current_Depool_Info"|jq '.interest'|tr -d '"')
 
 echo "           Pool Last Round Interest (%): $(echo "scale=3; $((PoolInterest)) / 1000000000" | $CALL_BC)"
 
-
-##############################################################################
-# get Rounds info from DePool contract state
-# "outputs": [
-# 				{"components":[
-# 					{"name":"id","type":"uint64"},
-# 					{"name":"supposedElectedAt","type":"uint32"},
-# 					{"name":"unfreeze","type":"uint32"},
-# 					{"name":"step","type":"uint8"},
-# 					{"name":"completionReason","type":"uint8"},
-# 					{"name":"participantQty","type":"uint32"},
-# 					{"name":"stake","type":"uint64"},
-# 					{"name":"rewards","type":"uint64"},
-# 					{"name":"unused","type":"uint64"},
-# 					{"name":"start","type":"uint64"},
-# 					{"name":"end","type":"uint64"},
-# 					{"name":"vsetHash","type":"uint256"}
-# 					],"name":"rounds","type":"map(uint64,tuple)"}
-# 			]
 
 Round_0_ID=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[0].id"|tr -d '"'| xargs printf "%d\n")
 Round_1_ID=$(echo "$Curr_Rounds_Info" | jq "[.rounds[]]|.[1].id"|tr -d '"'| xargs printf "%d\n")
@@ -455,3 +432,4 @@ echo "==========================================================================
 
 trap - EXIT
 exit 0
+

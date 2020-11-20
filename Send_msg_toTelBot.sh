@@ -1,6 +1,6 @@
 #!/bin/bash
 
-telegram_bot_token=""
+telegram_bot_token=
 telegram_chat_id=""
 
 Title="$1"

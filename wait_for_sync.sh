@@ -5,10 +5,11 @@ SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 # shellcheck source=env.sh
 . "${SCRIPT_DIR}/env.sh"
 
-[[ ! -d $HOME/logs ]] && mkdir -p $HOME/logs
+[[ ! -d $HOME/Logs ]] && mkdir -p $HOME/Logs
 
 SLEEP_TIMEOUT=$1
-SLEEP_TIMEOUT=${SLEEP_TIMEOUT:="60"}
+SLEEP_TIMEOUT=${SLEEP_TIMEOUT:="10"}
+MAX_TIME_DIFF=10
 
 # ===================================================
 GET_CHAIN_DATE() {
@@ -22,6 +23,7 @@ GET_CHAIN_DATE() {
 }
 # ===================================================
 
+first_sync="no"
 
 while(true)
 do
@@ -46,7 +48,15 @@ fi
 
 CHAIN_TD=`GET_CHAIN_DATE "$CHAIN_TD"`
 
-echo "CurrTime: $CURR_TD_NOW TimeDiff: $TIME_DIFF" | tee -a ~/logs/time-diff.log
+echo "CurrTime: $CURR_TD_NOW TimeDiff: $TIME_DIFF" | tee -a ~/Logs/time-diff.log
+
+if [[ $TIME_DIFF -lt $MAX_TIME_DIFF  ]];then
+    if [[ $first_sync == "yes" ]];then
+        exit 0
+    else
+        first_sync="yes"
+    fi
+fi
 
 sleep $SLEEP_TIMEOUT
 done

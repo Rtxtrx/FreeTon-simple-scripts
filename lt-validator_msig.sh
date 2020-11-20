@@ -98,7 +98,7 @@ echo "INFO: MSIG_ADDR = ${MSIG_ADDR} / $val_acc_addr"
 
 ELECTIONS_WORK_DIR="${KEYS_DIR}/elections"
 [[ ! -d ${ELECTIONS_WORK_DIR} ]] && mkdir -p ${ELECTIONS_WORK_DIR}
-
+chmod +x ${ELECTIONS_WORK_DIR}
 ##############################################################################
 # prepare user signature
 val_acc_addr=`echo "${MSIG_ADDR}" | cut -d ':' -f 2`
@@ -110,6 +110,7 @@ if [[ -z $msig_public ]] || [[ -z $msig_secret ]];then
     exit 1
 fi
 echo "${msig_secret}${msig_public}" > ${KEYS_DIR}/msig.keys.txt
+rm -f ${KEYS_DIR}/msig.keys.bin
 xxd -r -p ${KEYS_DIR}/msig.keys.txt ${KEYS_DIR}/msig.keys.bin
 
 ##############################################################################
@@ -123,7 +124,7 @@ CHAIN_TD=`echo "${VEC_OUTPUT}" | grep masterchainblocktime | awk '{print $2}'`
 TIME_DIFF=$((CURR_TD_NOW - CHAIN_TD))
 if [[ $TIME_DIFF -gt $TIMEDIFF_MAX ]];then
     echo "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF"
-    [[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF" 2>&1 > /dev/null
+    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Your node is not synced. Wait until full sync (<$TIMEDIFF_MAX) Current timediff: $TIME_DIFF" 2>&1 > /dev/null
     exit 1
 fi
 echo "INFO: Current TimeDiff: $TIME_DIFF"
@@ -194,9 +195,9 @@ if [ "$recover_amount" != "0" ]; then
 	    exit 1
     fi
 
-	echo "INFO: Recovery request was sent SUCCESSFULLY for ((recover_amount/1000000000))"
+	echo "INFO: Recovery request was sent SUCCESSFULLY for $((recover_amount/1000000000))"
 	echo "INFO: $(basename "$0") END $(date +%s) / $(date)"
-	[[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Requested $((recover_amount/1000000000))" 2>&1 > /dev/null
+	"${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Requested $((recover_amount/1000000000))" 2>&1 > /dev/null
 	exit 0
     
 else
@@ -246,7 +247,7 @@ fi
 # check in participant list by ADNL key
 if [[ ! -z $Curr_ADNL_Key ]];then
     trap 'echo LC TIMEOUT EXIT' EXIT
-    LC_OUTPUT="$($CALL_LC -rc "runmethodfull $elector_addr participant_list_extended" -rc "quit" 2>/dev/null | grep 'result:' | tr "]]" "\n" | tr '[' '\n' | awk 'NF > 0'| tee ${ELECTIONS_WORK_DIR}/Curr-Validator.lst)"
+    LC_OUTPUT="$($CALL_LC -rc "runmethodfull $elector_addr participant_list_extended" -rc "quit" 2>/dev/null | grep 'result:' | tr "]]" "\n" | tr '[' '\n' | awk 'NF > 0')"
     trap - EXIT
     Found_ADNL=`echo "${LC_OUTPUT}" | grep "$Dec_Curr_ADNL_Key" | awk '{print $4}'`
     if [[ -z $Found_ADNL ]];then
@@ -276,7 +277,7 @@ if [ "$STAKE" -ge ${VALIDATOR_ACTUAL_BALANCE} ]; then
     echo "###-ERROR: not enough tokens in ${MSIG_ADDR} wallet"
     echo "INFO: VALIDATOR_ACTUAL_BALANCE = ${VALIDATOR_ACTUAL_BALANCE}"
     echo "INFO: $(basename "$0") END $(date +%s) / $(date)"
-    [[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: not enough tokens in ${MSIG_ADDR} wallet. Balance: $VALIDATOR_ACTUAL_BALANCE" 2>&1 > /dev/null
+    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: not enough tokens in ${MSIG_ADDR} wallet. Balance: $VALIDATOR_ACTUAL_BALANCE" 2>&1 > /dev/null
     exit 1
 fi
 
@@ -318,7 +319,7 @@ if [[ -z $NewElectionKey ]];then
     NewElectionKey=`$CALL_VC -c "newkey" -c "quit" 2>/dev/null | tee "${ELECTIONS_WORK_DIR}/${VALIDATOR_NAME}-election-key" | grep "created new key" | awk '{print $4}'`
     trap - EXIT
     if [[ -z $NewElectionKey ]];then
-    echo "###-E RROR: Generate new election key FILED!!!"
+        echo "###-E RROR: Generate new election key FILED!!!"
         exit 1
     fi
     echo "Elections key: $NewElectionKey" >> ${ELECTIONS_WORK_DIR}/$election_id
@@ -326,7 +327,7 @@ else
     echo "INFO: New election key generated alredy."
 fi
 echo "INFO: New election key: $NewElectionKey"
-
+NewElectionKey=`cat ${ELECTIONS_WORK_DIR}/$election_id | grep "Elections key:" | awk '{print $3}'`
 #=================================================
 # Generate election ADNL key
 echo "INFO: Generate new ADNL key ..."
@@ -344,6 +345,13 @@ else
     echo "INFO: New ADNL key generated alredy."
 fi
 echo "INFO: New ADNL key: $New_ADNL_Key"
+
+#=================================================
+# Check keys in the engine
+
+VC_OUTPUT=`$CALL_VC -c "getvalidators" -c "quit" | tee "${ELECTIONS_WORK_DIR}/${VALIDATOR_NAME}-current-engine-keys"`
+
+
 
 #=================================================
 # run1.1
@@ -487,7 +495,7 @@ vr_result=`cat ${ELECTIONS_WORK_DIR}/validator-req-result.log | grep "external m
 
 if [[ -z $vr_result ]]; then
     echo "###-ERROR: Send message for eletction FILED!!!"
-    [[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Send message for eletction FILED!!!" 2>&1 > /dev/null
+    "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "###-ERROR: Send message for eletction FILED!!!" 2>&1 > /dev/null
     exit 1
 fi
 
@@ -496,11 +504,12 @@ echo "INFO: Submit transaction for elections was done SUCCESSFULLY!"
 FUTURE_CYCLE_ADNL=`echo $New_ADNL_Key | tr "[:upper:]" "[:lower:]"`
 echo "INFO: Sent $STAKE for elections. ADNL: $FUTURE_CYCLE_ADNL"
 
-[[ -x ${SCRIPT_DIR}/Send_msg_toTelBot.sh ]] && "${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Sent $STAKE for elections. ADNL: $FUTURE_CYCLE_ADNL" 2>&1 > /dev/null
+"${SCRIPT_DIR}/Send_msg_toTelBot.sh" "$HOSTNAME Server" "Sent $STAKE for elections. ADNL: $FUTURE_CYCLE_ADNL" 2>&1 > /dev/null
 
 date +"INFO: %F %T prepared for elections"
 echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
 
 trap - EXIT
 exit 0
+
 

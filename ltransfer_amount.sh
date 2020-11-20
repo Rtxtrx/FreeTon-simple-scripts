@@ -1,5 +1,5 @@
 #!/bin/bash
-# (C) Sergey Tyurin  2020-09-05 15:00:00
+# (C) Sergey Tyurin  2020-11-08 19:00:00
 
 # Disclaimer
 ##################################################################################################################
@@ -17,6 +17,11 @@
 # Author(s) retain the right to alter this disclaimer at any time.
 ##################################################################################################################
  
+SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
+echo "cd to $SCRIPT_DIR"
+cd $SCRIPT_DIR
+. "${SCRIPT_DIR}/env.sh"
+
 function tr_usage(){
 echo
 echo " use: transfer_amount.sh <SRC> <DST> <AMOUNT> [new]"
@@ -27,10 +32,15 @@ exit 0
 
 [[ $# -le 2 ]] && tr_usage
 
-SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
-echo "cd to $SCRIPT_DIR"
-cd $SCRIPT_DIR
-. "${SCRIPT_DIR}/env.sh"
+if [[ ! -x $CALL_TC ]];then
+    echo "Latest version of tonos-cli mast be placed in $HOME/bin/ folder"
+    exit 1
+fi
+
+if [[ ! -x $HOME/bin/lite-client ]];then
+    echo "Latest version of lite-client must be placed in $HOME/bin/ folder"
+    exit 1
+fi
 
 SRC_NAME=$1
 DST_NAME=$2
@@ -38,7 +48,11 @@ TRANSF_AMOUNT="$3"
 NEW_ACC=$4
 [[ -z $TRANSF_AMOUNT ]] && tr_usage
 
-NANO_AMOUNT=`${UTILS_DIR}/tonos-cli convert tokens $TRANSF_AMOUNT| grep "[0-9]"`
+if [[ ! -f $SetC_Wallet_ABI ]] || [[ ! -f $SafeC_Wallet_ABI ]];then
+    echo "You should have abi of contracts in $SCRIPT_DIR/../ton-labs-contracts/solidity"
+fi
+
+NANO_AMOUNT=`$CALL_TC convert tokens $TRANSF_AMOUNT| grep "[0-9]"`
 
 echo "Nanotokens to transfer: $NANO_AMOUNT"
 
@@ -53,65 +67,63 @@ DST_ACCOUNT=`cat ${KEYS_DIR}/${DST_NAME}.addr`
 SRC_KEY_FILE="${KEYS_DIR}/${1}.keys.json"
 
 echo "Check SRC $SRC_NAME account.."
-SRC_BALANCE_INFO=`${UTILS_DIR}/tonos-cli account $SRC_ACCOUNT || echo "ERROR get balance" && exit 0`
-SRC_AMOUNT=`echo "$SRC_BALANCE_INFO" | grep balance | awk '{ print $2 }'`
-SRC_TIME=`echo "$SRC_BALANCE_INFO" | grep last_paid | gawk '{ print strftime("%Y-%m-%d %H:%M:%S", $2)}'`
+ACCOUNT_INFO=`$CALL_LC -rc "getaccount ${SRC_ACCOUNT}" -rc "quit" 2>/dev/null `
+SRC_AMOUNT=`echo "$ACCOUNT_INFO" |grep "account balance" | tr -d "ng"|awk '{print $4}'`
 
 echo "Check DST $DST_NAME account.."
-DST_BALANCE_INFO=`${UTILS_DIR}/tonos-cli account $DST_ACCOUNT || echo "ERROR get balance" && exit 0`
-DST_AMOUNT=`echo "$DST_BALANCE_INFO" | grep balance | awk '{ print $2 }'`
-DST_TIME=`echo "$DST_BALANCE_INFO" | grep last_paid | gawk '{ print strftime("%Y-%m-%d %H:%M:%S", $2)}'`
+ACCOUNT_INFO=`$CALL_LC -rc "getaccount ${DST_ACCOUNT}" -rc "quit" 2>/dev/null `
+DST_AMOUNT=`echo "$ACCOUNT_INFO" |grep "account balance" | tr -d "ng"|awk '{print $4}'`
 
 echo "TRANFER FROM ${SRC_NAME} :"
 echo "SRC Account: $SRC_ACCOUNT"
 echo "Has balance : $((SRC_AMOUNT/1000000000)) tokens"
-echo "Last operation time: $SRC_TIME"
 echo
 echo "TRANFER TO ${DST_NAME} :"
 echo "DST Account: $DST_ACCOUNT"
 echo "Has balance : $((DST_AMOUNT/1000000000)) tokens"
-echo "Last operation time: $DST_TIME"
 echo
 echo "Transferring $TRANSF_AMOUNT ($NANO_AMOUNT) from ${SRC_NAME} to ${DST_NAME} ..." 
 
-read -p "### CHECK INFO TWICE!!! Is this a right tranfer?  (y/n)? " answer
-case ${answer:0:1} in
-    y|Y )
-        echo "Processing....."
-    ;;
-    * )
-        echo "Cancelled."
-        exit 1
-    ;;
-esac
+# read -p "### CHECK INFO TWICE!!! Is this a right tranfer?  (y/n)? " answer
+# case ${answer:0:1} in
+#     y|Y )
+#         echo "Processing....."
+#     ;;
+#     * )
+#         echo "Cancelled."
+#         exit 1
+#     ;;
+# esac
 
 # ==========================================================================
-TONOS_CLI_SEND_ATTEMPTS="10"
+# --abi ${SetC_Wallet_ABI} \
+# --abi ${SafeC_Wallet_ABI} \
+# tonos-cli message $SRC_ACCOUNT submitTransaction \
+#     "{\"dest\":\"${DST_ACCOUNT}\",\"value\":\"${NANO_AMOUNT}\",\"bounce\":$BOUNCE,\"allBalance\":false,\"payload\":\"\"}" \
+#     --abi ${SetC_Wallet_ABI} \
+#     --sign ${KEYS_DIR}/${SRC_NAME}.keys.json --raw --output ${SRC_NAME}-transfer-msg.boc
 
-for i in $(seq ${TONOS_CLI_SEND_ATTEMPTS}); do
-    echo "INFO: tonos-cli submitTransaction attempt #${i}..."
-    if ! "${UTILS_DIR}/tonos-cli" call "${SRC_ACCOUNT}" submitTransaction \
-        "{\"dest\":\"${DST_ACCOUNT}\",\"value\":\"${NANO_AMOUNT}\",\"bounce\":$BOUNCE,\"allBalance\":false,\"payload\":\"\"}" \
-        --abi "${CONFIGS_DIR}/SafeMultisigWallet.abi.json" \
-        --sign "${SRC_KEY_FILE}"; then
-        echo "INFO: tonos-cli submitTransaction attempt #${i}... FAIL"
-    else
-        echo "INFO: tonos-cli submitTransaction attempt #${i}... PASS"
-        break
-    fi
-    sleep 5s
-done
+# $CALL_LC -rc "sendfile ${SRC_NAME}-transfer-msg.boc" -rc 'quit' &> ${SRC_NAME}-transfer-result.log
 # ==========================================================================
+tonos-cli message $SRC_ACCOUNT submitTransaction \
+    "{\"dest\":\"${DST_ACCOUNT}\",\"value\":\"${NANO_AMOUNT}\",\"bounce\":$BOUNCE,\"allBalance\":false,\"payload\":\"\"}" \
+    --abi ${SafeC_Wallet_ABI} \
+    --sign ${KEYS_DIR}/${SRC_NAME}.keys.json --raw --output ${SRC_NAME}-SendTokens-msg.boc
+
+$CALL_LC -rc "sendfile ${SRC_NAME}-SendTokens-msg.boc" -rc 'quit' &> ${SRC_NAME}-SendTokens-result.log
+
+# ==========================================================================
+sleep 5s
 
 echo "Check SRC $SRC_NAME account.."
-SRC_BALANCE_INFO=`${UTILS_DIR}/tonos-cli account $SRC_ACCOUNT || echo "ERROR get balance" && exit 0`
-SRC_AMOUNT=`echo "$SRC_BALANCE_INFO" | grep balance | awk '{ print $2 }'`
-SRC_TIME=`echo "$SRC_BALANCE_INFO" | grep last_paid | gawk '{ print strftime("%Y-%m-%d %H:%M:%S", $2)}'`
+ACCOUNT_INFO=`$CALL_LC -rc "getaccount ${SRC_ACCOUNT}" -rc "quit" 2>/dev/null `
+SRC_AMOUNT=`echo "$ACCOUNT_INFO" |grep "account balance" | tr -d "ng"|awk '{print $4}'`
+SRC_TIME=`echo "$ACCOUNT_INFO" | grep "last_paid" | gawk -F ":" '{print strftime("%Y-%m-%d %H:%M:%S", $5)}'`
 
 echo "Check DST $DST_NAME account.."
-DST_BALANCE_INFO=`${UTILS_DIR}/tonos-cli account $DST_ACCOUNT || echo "ERROR get balance" && exit 0`
-DST_AMOUNT=`echo "$DST_BALANCE_INFO" | grep balance | awk '{ print $2 }'`
-DST_TIME=`echo "$DST_BALANCE_INFO" | grep last_paid | gawk '{ print strftime("%Y-%m-%d %H:%M:%S", $2)}'`
+ACCOUNT_INFO=`$CALL_LC -rc "getaccount ${DST_ACCOUNT}" -rc "quit" 2>/dev/null `
+DST_AMOUNT=`echo "$ACCOUNT_INFO" |grep "account balance" | tr -d "ng"|awk '{print $4}'`
+DST_TIME=`echo "$ACCOUNT_INFO" | grep "last_paid" | gawk -F ":" '{print strftime("%Y-%m-%d %H:%M:%S", $5)}'`
 
 echo
 echo "${SRC_NAME} Account: $SRC_ACCOUNT"

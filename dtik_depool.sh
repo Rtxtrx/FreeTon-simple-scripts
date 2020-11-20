@@ -1,6 +1,6 @@
 #!/bin/bash -eE
 
-# (C) Sergey Tyurin  2020-09-23 13:00:00
+# (C) Sergey Tyurin  2020-09-20 13:00:00
 
 # Disclaimer
 ##################################################################################################################
@@ -41,15 +41,15 @@ SCRIPT_DIR=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P`
 
 ###################
 TIMEDIFF_MAX=100
-SLEEP_TIMEOUT=30
+SLEEP_TIMEOUT=10
 SEND_ATTEMPTS=10
 ###################
 
 
 Depool_addr=`cat ${KEYS_DIR}/depool.addr`
-Helper_addr=`cat ${KEYS_DIR}/helper.addr`
-Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
-Proxy1_addr=`cat ${KEYS_DIR}/proxy1.addr`
+#Helper_addr=`cat ${KEYS_DIR}/helper.addr`
+#Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
+#Proxy1_addr=`cat ${KEYS_DIR}/proxy1.addr`
 Validator_addr=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
 Tik_addr=`cat ${KEYS_DIR}/Tik.addr`
 Tik_Keys_File="${KEYS_DIR}/Tik.keys.json"
@@ -66,7 +66,7 @@ CALL_LC="${TON_BUILD_DIR}/lite-client/lite-client -p ${KEYS_DIR}/liteserver.pub 
 CALL_TL="$HOME/bin/tvm_linker"
 
 Tik_Payload="te6ccgEBAQEABgAACCiAmCM="
-NANOSTAKE=$((2 * 1000000000))
+NANOSTAKE=$((1 * 1000000000))
 
 ##############################################################################
 # prepare user signature
@@ -102,7 +102,7 @@ echo "INFO: Make boc for lite-client ... DONE"
 ###############  Send query by lite-client ###################################
 ##############################################################################
 Last_Trans_lt=$($CALL_LC -rc "getaccount ${Depool_addr}" -t "3" -rc "quit" 2>/dev/null |grep 'last transaction lt'|awk '{print $5}')
-echo "Last Transaction local time: $Last_Trans_lt"
+
 echo "INFO: Send query to Depool by lite-client ..."
 
 Attempts_to_send=$SEND_ATTEMPTS
@@ -120,7 +120,6 @@ while [[ $Attempts_to_send -gt 0 ]]; do
     echo "INFO: Check depool cranked ..."
     sleep $SLEEP_TIMEOUT
     Curr_Trans_lt=$($CALL_LC -rc "getaccount ${Depool_addr}" -t "3" -rc "quit" 2>/dev/null |grep 'last transaction lt'|awk '{print $5}')
-    echo "After Tik Last Transaction local time: $Curr_Trans_lt"
     if [[ $Curr_Trans_lt == $Last_Trans_lt ]];then
         echo "Attempt # $((SEND_ATTEMPTS + 1 - Attempts_to_send))/$SEND_ATTEMPTS"
         echo "+++-WARNING: Depool does not crank up .. Repeat sending.."
@@ -143,3 +142,4 @@ echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
 
 trap - EXIT
 exit 0
+
