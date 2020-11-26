@@ -1,6 +1,6 @@
 #!/bin/bash -eE
 
-# (C) Sergey Tyurin  2020-09-20 13:00:00
+# (C) Sergey Tyurin  2020-11-26 11:16:00
 
 # Disclaimer
 ##################################################################################################################
@@ -45,6 +45,9 @@ SLEEP_TIMEOUT=10
 SEND_ATTEMPTS=10
 ###################
 
+file="${KEYS_DIR}/addr"
+for Depool_addr in $(cat $file)
+do
 
 Depool_addr=`cat ${KEYS_DIR}/depool.addr`
 Validator_addr=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
@@ -53,9 +56,7 @@ Tik_Keys_File="${KEYS_DIR}/Tik.keys.json"
 
 Work_Chain=`echo "${Tik_addr}" | cut -d ':' -f 1`
 
-old_depool_name=$1
-[[ ! -z $old_depool_name ]] && old_depool_addr=$(cat ${KEYS_DIR}/${old_depool_name}.addr)
-Depool_addr=${old_depool_addr:=$Depool_addr}
+echo $Depool_addr
 
 ELECTIONS_WORK_DIR="${KEYS_DIR}/elections"
 SCs_DIR="$NET_TON_DEV_SRC_TOP_DIR/ton-labs-contracts/solidity/depool"
@@ -136,6 +137,8 @@ fi
 
 date +"INFO: %F %T Depool Tiked"
 echo "INFO: $(basename "$0") FINISHED $(date +%s) / $(date)"
+
+done
 
 trap - EXIT
 exit 0
