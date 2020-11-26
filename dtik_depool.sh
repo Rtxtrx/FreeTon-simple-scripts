@@ -47,9 +47,6 @@ SEND_ATTEMPTS=10
 
 
 Depool_addr=`cat ${KEYS_DIR}/depool.addr`
-#Helper_addr=`cat ${KEYS_DIR}/helper.addr`
-#Proxy0_addr=`cat ${KEYS_DIR}/proxy0.addr`
-#Proxy1_addr=`cat ${KEYS_DIR}/proxy1.addr`
 Validator_addr=`cat ${KEYS_DIR}/${HOSTNAME}.addr`
 Tik_addr=`cat ${KEYS_DIR}/Tik.addr`
 Tik_Keys_File="${KEYS_DIR}/Tik.keys.json"
